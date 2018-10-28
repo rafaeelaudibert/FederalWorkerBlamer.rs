@@ -1,6 +1,6 @@
 [package]
-name = "trabalho_final_CPD"
+name = "trabalho_final_cpd"
 version = "0.1.0"
-authors = ["Rafael Audibert"]
+authors = ["Rafael Audibert <rbaudibert@inf.ufrgs.br"]
 
 [dependencies]
