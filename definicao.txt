@@ -1,0 +1,7 @@
+Integrante: Rafael Baldasso Audibert (Farei sozinho)
+Linguagem: Rust (tentando utilizar paralelismo, já que a base de dados é muito grande)
+
+Serão utilizados os dados que podem ser baixados no link disponibilizado abaixo, contendo a remuneração + benefícios do funcionalismo público federal brasileiro, que está disponível pelo Portal da Transparência. Será utilizada uma árvore Trie para indexar as pessoas pelo nome delas, podendo pesquisar uma pessoa ou várias, outra Trie para indexar os órgãos do Governo, conseguindo encontrar todas as pessoas que trabalham em um órgão, e alguma estrutura para encontrar as pessoas com um salário dentro de um determinado range (ainda não sei qual estrutura, pretendo conversar contigo sobre isso algum dia desses, pra me ajudar com esse trabalho, já que eu gostaria que ele ficasse super rápido, pois seria muito interessante ver essas informações de maneira rápida, já que o site da Transparêcia não é a coisa mais otimizada que eu já vi, hahahah)
+Será utilizada a Biblioteca csv-rust para ler do arquivo CSV, e a Serde, para a desserialização. Depois as Tries serão guardadas em binário nos arquivo, para não precisar gerar a Trie toda vez. Também teremos uma lista, onde estará guardada a informação principal. Saberemos onde acessar na lista, a partir da informação existente na Trie.
+
+Link para download (80MB): http://www.portaltransparencia.gov.br/download-de-dados/servidores/201808_Servidores
