@@ -1,11 +1,8 @@
 [package]
 name = "trabalho_final_cpd"
 version = "0.1.0"
-authors = ["Rafael Audibert <rbaudibert@inf.ufrgs.br"]
+authors = ["Rafael Audibert <rbaudibert@inf.ufrgs.br>"]
 
 [dependencies]
 csv = "1"
-serde = "1.0"
-serde_derive = "1.0"
-rustc-serialize = "0.3"
-bincode = "1.0.1"
+clap = "~2.27.0"
