@@ -6,7 +6,7 @@ mod record;
 use record::Record;
 
 // Import used libraries
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder, StringRecord};
 use clap::{App, Arg};
 use std::{error::Error,
           process,
@@ -19,28 +19,65 @@ use std::{error::Error,
 const DEFAULT_ENTRY_POSITION : u64 = 459_059;
 
 fn generate_binary(input_file : &str) -> Result<(), Box<Error>> {
-    let mut rdr = ReaderBuilder::new().delimiter(b';').from_path(input_file)?;
-    let mut buffer = File::create("remuneracao.bin")?;
+    let mut csv_salary_reader = ReaderBuilder::new().delimiter(b';').from_path(input_file)?;
+    let mut csv_info_reader = ReaderBuilder::new().delimiter(b';').from_path("csv/201808_Cadastro.csv" )?;
+    let mut output_file = File::create("remuneracao.bin")?;
 
-    for result in rdr.records().map(|r| r.unwrap()) {
+    let salary_values = csv_salary_reader.records().map(|r| r.unwrap());
+    let mut info_values = csv_info_reader.records().map(|r| r.unwrap()).peekable();
+    let mut sem_informacao_vec : Vec<u8> = Vec::new();
+
+    for elem in vec!(83, 101, 109, 32, 105, 110, 102, 111, 114, 109, 97, 239, 191, 189, 239, 191, 189, 111) {
+        sem_informacao_vec.push(elem);
+    }
+
+    for salary_value in salary_values {
+
+        let mut info_value : StringRecord = StringRecord::new();
+        while let Some(possible_info_value) = Some(info_values.next().unwrap()) {
+            if possible_info_value.get(0).unwrap().as_bytes().to_vec() != salary_value[2].as_bytes().to_vec() {
+                continue;
+            } else if possible_info_value.get(4).unwrap().as_bytes().to_vec() != sem_informacao_vec {
+                info_value = possible_info_value; // Primeira entrada com aquele ID tem uma profissao
+                break;
+            } else if info_values.peek().unwrap().get(0).unwrap().as_bytes().to_vec() == salary_value[2].as_bytes().to_vec() {
+                // Ultima posição não tinha profissão, mas próxima vai ter, então pego a proxima
+                info_value = info_values.next().unwrap();
+                break;
+            } else {
+                //Se a pessoa não tem informação no db, eu uso "Sem informacao" mesmo
+                info_value = possible_info_value;
+                break;
+            }
+        }
 
         let mut record = Record {
-            id: result[2].as_bytes().to_vec(),
-            cpf: result[3].as_bytes().to_vec(),
-            nome: result[4].as_bytes().to_vec(),
-            remuneracao_basica_bruta_rs: result[5].as_bytes().to_vec(),
-            gratificacao_natalina_rs: result[9].as_bytes().to_vec(),
-            ferias_rs: result[13].as_bytes().to_vec(),
-            outras_remuneracoes_eventuais_rs: result[15].as_bytes().to_vec(),
-            irrf_rs: result[17].as_bytes().to_vec(),
-            pss_rgps_rs: result[19].as_bytes().to_vec(),
-            demais_deducoes_rs: result[21].as_bytes().to_vec(),
-            remuneracao_apos_deducoes_obrigatorias_rs: result[29].as_bytes().to_vec(),
-            total_verbas_indenizatorias_rs: result[37].as_bytes().to_vec()
+            id: salary_value[2].as_bytes().to_vec(),
+            cpf: salary_value[3].as_bytes().to_vec(),
+            nome: salary_value[4].as_bytes().to_vec(),
+            descricao_cargo: info_value[4].as_bytes().to_vec(),
+            orgao_lotacao: info_value[18].as_bytes().to_vec(),
+            orgao_exercicio: info_value[24].as_bytes().to_vec(),
+            remuneracao_basica_bruta_rs: salary_value[5].as_bytes().to_vec(),
+            gratificacao_natalina_rs: salary_value[9].as_bytes().to_vec(),
+            ferias_rs: salary_value[13].as_bytes().to_vec(),
+            outras_remuneracoes_eventuais_rs: salary_value[15].as_bytes().to_vec(),
+            irrf_rs: salary_value[17].as_bytes().to_vec(),
+            pss_rgps_rs: salary_value[19].as_bytes().to_vec(),
+            demais_deducoes_rs: salary_value[21].as_bytes().to_vec(),
+            remuneracao_apos_deducoes_obrigatorias_rs: salary_value[29].as_bytes().to_vec(),
+            total_verbas_indenizatorias_rs: salary_value[37].as_bytes().to_vec(),
+            data_inicio_afastamento: info_value[29].as_bytes().to_vec(),
+            data_termino_afastamento: info_value[30].as_bytes().to_vec(),
+            regime_contratacao: info_value[31].as_bytes().to_vec(),
+            jornada_trabalho: info_value[32].as_bytes().to_vec(),
+            data_ingresso_cargo: info_value[33].as_bytes().to_vec(),
+            data_ingresso_orgao: info_value[35].as_bytes().to_vec()
         };
 
         record.resize();
-        buffer.write(&record.as_u8_array()).unwrap();
+        output_file.write(&record.as_u8_array()).unwrap();
+
     }
 
     Ok(())
@@ -73,15 +110,24 @@ fn print_record_from_offset(offset : u64) -> Option<Record> {
             0 => record.nome = text.as_bytes().to_vec(),
             1 => record.id = text.as_bytes().to_vec(),
             2 => record.cpf = text.as_bytes().to_vec(),
-            3 => record.remuneracao_basica_bruta_rs = text.as_bytes().to_vec(),
-            4 => record.gratificacao_natalina_rs = text.as_bytes().to_vec(),
-            5 => record.ferias_rs = text.as_bytes().to_vec(),
-            6 => record.outras_remuneracoes_eventuais_rs = text.as_bytes().to_vec(),
-            7 => record.irrf_rs = text.as_bytes().to_vec(),
-            8 => record.pss_rgps_rs = text.as_bytes().to_vec(),
-            9 => record.demais_deducoes_rs = text.as_bytes().to_vec(),
-            10 => record.remuneracao_apos_deducoes_obrigatorias_rs = text.as_bytes().to_vec(),
-            11 => record.total_verbas_indenizatorias_rs = text.as_bytes().to_vec(),
+            3 => record.descricao_cargo = text.as_bytes().to_vec(),
+            4 => record.orgao_lotacao = text.as_bytes().to_vec(),
+            5 => record.orgao_exercicio = text.as_bytes().to_vec(),
+            6 => record.remuneracao_basica_bruta_rs = text.as_bytes().to_vec(),
+            7 => record.gratificacao_natalina_rs = text.as_bytes().to_vec(),
+            8 => record.ferias_rs = text.as_bytes().to_vec(),
+            9 => record.outras_remuneracoes_eventuais_rs = text.as_bytes().to_vec(),
+            10 => record.irrf_rs = text.as_bytes().to_vec(),
+            11 => record.pss_rgps_rs = text.as_bytes().to_vec(),
+            12 => record.demais_deducoes_rs = text.as_bytes().to_vec(),
+            13 => record.remuneracao_apos_deducoes_obrigatorias_rs = text.as_bytes().to_vec(),
+            14 => record.total_verbas_indenizatorias_rs = text.as_bytes().to_vec(),
+            15 => record.data_inicio_afastamento = text.as_bytes().to_vec(),
+            16 => record.data_termino_afastamento = text.as_bytes().to_vec(),
+            17 => record.regime_contratacao = text.as_bytes().to_vec(),
+            18 => record.jornada_trabalho = text.as_bytes().to_vec(),
+            19 => record.data_ingresso_cargo = text.as_bytes().to_vec(),
+            20 => record.data_ingresso_orgao = text.as_bytes().to_vec(),
             _ => println!("Error!!")
         }
     }
