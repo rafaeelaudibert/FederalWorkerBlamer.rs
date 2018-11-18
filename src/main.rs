@@ -1,17 +1,17 @@
 extern crate csv;
 extern crate clap;
 
-// Import record.rs
-mod record;
 
-// Import parser.rs
-mod parser;
+mod record; // Import record.rs
+mod parser; // Import parser.rs
+mod trie;   // Import trie.rs
 
 // Import used libraries
 use clap::{App, Arg};
 use std::{process, time::Instant};
 
 const DEFAULT_ENTRY_POSITION : &str = "459059";
+
 fn main() {
 
     let matches = App::new("Funcionalismo Publico Parser")
@@ -45,11 +45,10 @@ fn main() {
     let entry_position : u64 = matches.value_of("entry").unwrap().parse().unwrap();
     let before : Instant = Instant::now();
     println!("We are searching for the {}-th entry in the database", entry_position);
-    match parser::print_record_from_entry(entry_position) {
+    match parser::print_record_from_entry(entry_position - 1) {
         Some(record) => println!("{}", record),
         _            => println!("Worker Not found")
     }
     println!("Time elapsed: {:?}", Instant::now().duration_since(before));
-
 
 }

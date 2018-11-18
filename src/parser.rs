@@ -1,17 +1,24 @@
 use record;
+use trie;
 use record::{Record};
 use csv::{ReaderBuilder, StringRecord};
 use std::{error::Error,
           str,
           fs,
           fs::File,
+          time::Instant,
           io::{Seek, SeekFrom, Read, Write}
          };
+
+
+const DATABASE_FILE : &str = "database.bin";
 
 pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<(), Box<Error>> {
     let mut csv_salary_reader = ReaderBuilder::new().delimiter(b';').from_path(salary_file)?;
     let mut csv_info_reader = ReaderBuilder::new().delimiter(b';').from_path(info_file)?;
-    let mut output_file = File::create("remuneracao.bin")?;
+    let mut output_file = File::create(DATABASE_FILE)?;
+    let mut trie = trie::Trie::new();
+    let mut counter : u32 = 0;
 
     let salary_values = csv_salary_reader.records().map(|r| r.unwrap());
     let mut info_values = csv_info_reader.records().map(|r| r.unwrap()).peekable();
@@ -65,16 +72,23 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
             data_ingresso_orgao: info_value[35].as_bytes().to_vec()
         };
 
+        trie.add(salary_value[4].to_string(), counter + 1);
+
         record.resize();
         output_file.write(&record.as_u8_array()).unwrap();
 
+        counter += 1;
     }
+
+    let before : Instant = Instant::now();
+    println!("{:?}", trie.at("RODRIGO MACHADO".to_string()));
+    println!("Time elapsed: {:?}", Instant::now().duration_since(before));
 
     Ok(())
 }
 
 fn exceeds_database_size(entry_position : u64) -> bool {
-    let metadata = fs::metadata("remuneracao.bin").unwrap();
+    let metadata = fs::metadata(DATABASE_FILE).unwrap();
     if metadata.len() > entry_position { false } else { true }
 }
 
@@ -84,11 +98,11 @@ pub fn print_record_from_entry(entry: u64) -> Option<Record> {
 
 pub fn print_record_from_offset(offset : u64) -> Option<Record> {
 
-    if exceeds_database_size(offset) {
+    if exceeds_database_size(offset) || offset <= 0{
         return None; // Checks if there is that many workers in the database
     }
 
-    let mut f = File::open("remuneracao.bin").unwrap();
+    let mut f = File::open(DATABASE_FILE).unwrap();
     let mut buffer : Vec<u8>;
     let mut record = Record::default();
 
