@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
 #[derive(Debug, Default)]
-struct Node {
-    chars: HashMap<char, usize>,
+pub struct Node {
+    chars: HashMap<char, u32>,
     val: Vec<u32>,
 }
 
 #[derive(Debug, Default)]
 pub struct Trie {
     nodes: Arena,
-    root: usize,
+    root: u32,
 }
 
 #[derive(Debug, Default)]
@@ -34,16 +34,16 @@ impl Trie {
         for c in string.chars() {
             let len = self.nodes.nodes.len(); // Prevent extra borrowing
 
-            if !self.nodes.nodes[node].chars.contains_key(&c) { // Se não contem aquela chave
-                self.nodes.nodes[node].chars.insert(c, len); // Não precisa diminuir 1, pois será aumentado o tamanho
+            if !self.nodes.nodes[node as usize].chars.contains_key(&c) { // Se não contem aquela chave
+                self.nodes.nodes[node as usize].chars.insert(c, len as u32); // Não precisa diminuir 1, pois será aumentado o tamanho
 
                 self.nodes.nodes.push(Node::default());
-                node = self.nodes.nodes.len() - 1;
+                node = (self.nodes.nodes.len() - 1) as u32;
             } else {
-                node = *self.nodes.nodes[node].chars.get(&c).unwrap();
+                node = *self.nodes.nodes[node as usize].chars.get(&c).unwrap();
             }
         }
-        self.nodes.nodes[node].val.push(val);
+        self.nodes.nodes[node as usize].val.push(val);
 
     }
 
@@ -60,10 +60,10 @@ impl Trie {
         return Some(node.val.clone());
     }
 
-    fn node_at(&self, index : usize) -> Node {
+    fn node_at(&self, index : u32) -> Node {
         Node {
-            chars: self.nodes.nodes[index].chars.clone(),
-            val: self.nodes.nodes[index].val.clone(),
+            chars: self.nodes.nodes[index as usize].chars.clone(),
+            val: self.nodes.nodes[index as usize].val.clone(),
         }
     }
 }

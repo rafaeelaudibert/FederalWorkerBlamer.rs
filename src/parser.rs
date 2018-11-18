@@ -2,12 +2,13 @@ use record;
 use trie;
 use record::{Record};
 use csv::{ReaderBuilder, StringRecord};
-use std::{error::Error,
+use std::collections::HashMap;
+use std::{mem,
+          error::Error,
           str,
           fs,
           fs::File,
-          time::Instant,
-          io::{Seek, SeekFrom, Read, Write}
+          io::{self, Seek, SeekFrom, Read, Write}
          };
 
 
@@ -78,11 +79,11 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
         output_file.write(&record.as_u8_array()).unwrap();
 
         counter += 1;
+        if counter % 40_000 == 0 {
+            print!(".");
+            io::stdout().flush().unwrap();
+        }
     }
-
-    let before : Instant = Instant::now();
-    println!("{:?}", trie.at("RODRIGO MACHADO".to_string()));
-    println!("Time elapsed: {:?}", Instant::now().duration_since(before));
 
     Ok(())
 }

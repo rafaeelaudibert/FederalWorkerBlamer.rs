@@ -8,7 +8,7 @@ mod trie;   // Import trie.rs
 
 // Import used libraries
 use clap::{App, Arg};
-use std::{process, time::Instant};
+use std::{io::{self, Write}, process, time::Instant};
 
 const DEFAULT_ENTRY_POSITION : &str = "459059";
 
@@ -33,13 +33,14 @@ fn main() {
                     .get_matches();
 
     if let Some(mut csv_files) = matches.values_of("csv") {
-        println!("The CSV files passed in will be parsed to generate the database file");
+        print!("The CSV files passed in are being parsed to generate the database file.");
+        io::stdout().flush().unwrap();
         let before : Instant = Instant::now();
         if let Err(err) = parser::generate_database_files(csv_files.next().unwrap(), csv_files.next().unwrap()) {
            println!("Error trying to generate the database file: {}", err);
            process::exit(1);
         }
-        println!("Time elapsed: {:?}", Instant::now().duration_since(before));
+        println!("\nTime elapsed: {:?}", Instant::now().duration_since(before));
     }
 
     let entry_position : u64 = matches.value_of("entry").unwrap().parse().unwrap();
