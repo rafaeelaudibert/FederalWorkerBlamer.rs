@@ -1,5 +1,4 @@
-use std::fmt;
-use std::str;
+use std::{fmt, str};
 
 pub const NAME_MAX_SIZE : usize = 40;
 pub const CPF_MAX_SIZE : usize = 15;
@@ -197,7 +196,7 @@ impl fmt::Display for Record {
                    Demais Deducoes: R$ {}\n\
                    Remuneração Após Deduções Obrigatórias (IRRF+PSS): R$ {}\n\
                    Remuneração Provinda de Verbas Indenizatórias: R$ {}\n\
-                   Data de Inicio e Termino do Afastamento (Caso esteja afastado): {} -> {}\n\
+                   Data de Inicio e Termino do Afastamento: {} {}\n\
                    Regime de Contratacao: {}\n\
                    Jornada de Trabalho: {}\n\
                    Data de Ingresso no Cargo: {}\n\
@@ -208,7 +207,8 @@ impl fmt::Display for Record {
                    self.get_ferias(), self.get_outras_remuneracoes(), self.get_irrf(),
                    self.get_pss(), self.get_demais_reducoes(),
                    self.get_remuneracao_apos_deducoes(), self.get_verbas_indenizatorias(),
-                   self.get_data_inicio_afastamento(), self.get_data_termino_afastamento(),
+                   if self.data_inicio_afastamento.len() > 1 { self.get_data_inicio_afastamento() } else { "Não está afastado" },
+                   if self.data_termino_afastamento.len() > 1 { "até ".to_owned() + self.get_data_termino_afastamento()} else { " ".to_string() },
                    self.get_regime_contratacao(), self.get_jornada_trabalho(),
                    self.get_data_ingresso_cargo(), self.get_data_ingresso_orgao())
     }
