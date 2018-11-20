@@ -2,9 +2,7 @@ use record;
 use trie;
 use record::{Record};
 use csv::{ReaderBuilder, StringRecord};
-use std::collections::HashMap;
-use std::{mem,
-          error::Error,
+use std::{error::Error,
           str,
           fs,
           fs::File,
@@ -85,21 +83,25 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
         }
     }
 
+    if let Err(err) = trie.save_to_file("trie.bin") {
+        println!("Error saving the trie to a file: {}", err);
+    }
+
     Ok(())
 }
 
-fn exceeds_database_size(entry_position : u64) -> bool {
+fn exceeds_database_size(entry_position : u32) -> bool {
     let metadata = fs::metadata(DATABASE_FILE).unwrap();
-    if metadata.len() > entry_position { false } else { true }
+    if metadata.len() > entry_position as u64 { false } else { true }
 }
 
-pub fn print_record_from_entry(entry: u64) -> Option<Record> {
-    print_record_from_offset(entry * record::DATA_ENTRY_SIZE as u64)
+pub fn print_record_from_entry(entry: u32) -> Option<Record> {
+    print_record_from_offset(entry * record::DATA_ENTRY_SIZE as u32)
 }
 
-pub fn print_record_from_offset(offset : u64) -> Option<Record> {
+pub fn print_record_from_offset(offset : u32) -> Option<Record> {
 
-    if exceeds_database_size(offset) || offset <= 0{
+    if exceeds_database_size(offset) || offset <= 0 {
         return None; // Checks if there is that many workers in the database
     }
 
@@ -107,7 +109,7 @@ pub fn print_record_from_offset(offset : u64) -> Option<Record> {
     let mut buffer : Vec<u8>;
     let mut record = Record::default();
 
-    f.seek(SeekFrom::Start(offset)).unwrap();
+    f.seek(SeekFrom::Start(offset as u64)).unwrap();
 
     for (i, bytes) in record::RECORD_SIZES.iter().enumerate() {
 

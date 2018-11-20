@@ -43,13 +43,17 @@ fn main() {
         println!("\nTime elapsed: {:?}", Instant::now().duration_since(before));
     }
 
-    let entry_position : u64 = matches.value_of("entry").unwrap().parse().unwrap();
+    //let entry_position : u64 = matches.value_of("entry").unwrap().parse().unwrap();
     let before : Instant = Instant::now();
-    println!("We are searching for the {}-th entry in the database", entry_position);
-    match parser::print_record_from_entry(entry_position - 1) {
-        Some(record) => println!("{}", record),
-        _            => println!("Worker Not found")
+    if let Some(entry_position) = trie::Trie::at_from_file("MICHEL MIGUEL ELIAS TEMER LULIA", "trie.bin").unwrap() {
+        let entry = entry_position[0];
+        println!("We are searching for the {}-th entry in the database", entry);
+        match parser::print_record_from_entry(entry - 1) {
+            Some(record) => println!("{}", record),
+            _            => println!("Worker Not found")
+        }
+        println!("Time elapsed: {:?}", Instant::now().duration_since(before));
+    } else {
+        println!("Record not found!");
     }
-    println!("Time elapsed: {:?}", Instant::now().duration_since(before));
-
 }
