@@ -117,6 +117,31 @@ impl Record {
         str::from_utf8(&self.data_ingresso_orgao).unwrap()
     }
 
+    pub fn get(&self, index : usize) -> String {
+        match index {
+            0 => self.get_name().to_string(),
+            1 => self.get_id().to_string(),
+            2 => self.get_cpf().to_string(),
+            3 => self.get_descricao_cargo().to_string(),
+            4 => self.get_orgao_exercicio().to_string(),
+            5 => self.get_remuneracao_bruta().to_string(),
+            6 => self.get_gratificacao_natalina().to_string(),
+            7 => self.get_ferias().to_string(),
+            8 => self.get_outras_remuneracoes().to_string(),
+            9 => self.get_irrf().to_string(),
+            10 => self.get_pss().to_string(),
+            11 => self.get_demais_reducoes().to_string(),
+            12 => self.get_remuneracao_apos_deducoes().to_string(),
+            13 => self.get_verbas_indenizatorias().to_string(),
+            14 => self.get_data_inicio_afastamento().to_string(),
+            15 => self.get_data_termino_afastamento().to_string(),
+            16 => self.get_jornada_trabalho().to_string(),
+            17 => self.get_data_ingresso_cargo().to_string(),
+            18 => self.get_data_ingresso_orgao().to_string(),
+            _ => "Error!!".to_string()
+        }
+    }
+
     pub fn generate_csv_string(&mut self) -> String {
         let mut return_string : String = String::new();
 

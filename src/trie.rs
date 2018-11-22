@@ -1,6 +1,8 @@
 use std::collections::HashMap;
-use std::{error, io::{Read, Write, Seek, SeekFrom}, fs::OpenOptions};
+use std::{error, str, io::{Read, Write, Seek, SeekFrom}, fs::{File, OpenOptions}};
 use std::mem::transmute;
+use record;
+use parser;
 
 #[derive(Debug, Default)]
 pub struct Node {
@@ -28,6 +30,58 @@ impl Trie {
             },
             root: 0,
         }
+    }
+
+    pub fn new_from_database(trie_file : String, record_index : usize) -> Result<(), Box<error::Error>> {
+        let mut trie = Trie::new();
+        let mut f = File::open(parser::DATABASE_FILE)?;
+        let mut buffer : Vec<u8>;
+        let mut record = record::Record::default();
+        let mut record_counter = 0;
+
+        while !parser::exceeds_database_size(record_counter * record::DATA_ENTRY_SIZE as u32) {
+            //println!("{}", record_counter);
+
+            for (i, bytes) in record::RECORD_SIZES.iter().enumerate() {
+
+                buffer = vec![0; *bytes as usize];
+                f.read_exact(&mut buffer).unwrap();
+
+                let text : &str = str::from_utf8(&buffer).unwrap().trim_matches(char::from(0));
+
+                match i {
+                    0 => record.nome = text.as_bytes().to_vec(),
+                    1 => record.id = text.as_bytes().to_vec(),
+                    2 => record.cpf = text.as_bytes().to_vec(),
+                    3 => record.descricao_cargo = text.as_bytes().to_vec(),
+                    4 => record.orgao_exercicio = text.as_bytes().to_vec(),
+                    5 => record.remuneracao_basica_bruta_rs = text.as_bytes().to_vec(),
+                    6 => record.gratificacao_natalina_rs = text.as_bytes().to_vec(),
+                    7 => record.ferias_rs = text.as_bytes().to_vec(),
+                    8 => record.outras_remuneracoes_eventuais_rs = text.as_bytes().to_vec(),
+                    9 => record.irrf_rs = text.as_bytes().to_vec(),
+                    10 => record.pss_rgps_rs = text.as_bytes().to_vec(),
+                    11 => record.demais_deducoes_rs = text.as_bytes().to_vec(),
+                    12 => record.remuneracao_apos_deducoes_obrigatorias_rs = text.as_bytes().to_vec(),
+                    13 => record.total_verbas_indenizatorias_rs = text.as_bytes().to_vec(),
+                    14 => record.data_inicio_afastamento = text.as_bytes().to_vec(),
+                    15 => record.data_termino_afastamento = text.as_bytes().to_vec(),
+                    16 => record.jornada_trabalho = text.as_bytes().to_vec(),
+                    17 => record.data_ingresso_cargo = text.as_bytes().to_vec(),
+                    18 => record.data_ingresso_orgao = text.as_bytes().to_vec(),
+                    _ => println!("Error!!")
+                }
+            }
+
+            trie.add(record.get(record_index), record_counter + 1);
+            record_counter += 1;
+        }
+
+        if let Err(err) = trie.save_to_file(&trie_file) {
+            println!("Error saving the trie to a file: {}", err);
+        }
+
+        Ok(())
     }
 
     pub fn add(&mut self, string: String, val: u32) {

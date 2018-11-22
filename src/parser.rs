@@ -1,5 +1,4 @@
 use record;
-use trie;
 use record::{Record};
 use csv::{ReaderBuilder, StringRecord};
 use std::{error::Error,
@@ -10,13 +9,12 @@ use std::{error::Error,
          };
 
 
-const DATABASE_FILE : &str = "database.bin";
+pub const DATABASE_FILE : &str = "database.bin";
 
 pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<(), Box<Error>> {
     let mut csv_salary_reader = ReaderBuilder::new().delimiter(b',').has_headers(false).from_path(salary_file)?;
     let mut csv_info_reader = ReaderBuilder::new().delimiter(b';').from_path(info_file)?;
     let mut output_file = File::create(DATABASE_FILE)?;
-    let mut trie = trie::Trie::new();
     let mut counter : u32 = 0;
 
 
@@ -70,8 +68,6 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
             data_ingresso_orgao: info_value[35].as_bytes().to_vec()
         };
 
-        trie.add(salary_value[4].to_string(), counter + 1);
-
         record.resize();
         output_file.write(&record.as_u8_array()).unwrap();
 
@@ -82,23 +78,19 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
         }
     }
 
-    if let Err(err) = trie.save_to_file("trie.bin") {
-        println!("Error saving the trie to a file: {}", err);
-    }
-
     Ok(())
 }
 
-fn exceeds_database_size(entry_position : u32) -> bool {
+pub fn exceeds_database_size(entry_position : u32) -> bool {
     let metadata = fs::metadata(DATABASE_FILE).unwrap();
     if metadata.len() > entry_position as u64 { false } else { true }
 }
 
-pub fn print_record_from_entry(entry: u32) -> Option<Record> {
-    print_record_from_offset(entry * record::DATA_ENTRY_SIZE as u32)
+pub fn record_from_entry(entry: u32) -> Option<Record> {
+    record_from_offset(entry * record::DATA_ENTRY_SIZE as u32)
 }
 
-pub fn print_record_from_offset(offset : u32) -> Option<Record> {
+pub fn record_from_offset(offset : u32) -> Option<Record> {
 
     if exceeds_database_size(offset) || offset <= 0 {
         return None; // Checks if there is that many workers in the database
