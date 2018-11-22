@@ -50,27 +50,6 @@ impl Trie {
 
     }
 
-    pub fn at(&mut self, string: String) -> Option<Vec<u32>> {
-        let mut node = self.node_at(self.root);
-        for c in string.chars() {
-            if node.chars.contains_key(&c) {
-                node = self.node_at(*node.chars.get(&c).unwrap());
-            } else {
-                return None;
-            }
-        }
-
-        return Some(node.val.clone());
-    }
-
-    fn node_at(&self, index : u32) -> Node {
-        Node {
-            chars: self.nodes.nodes[index as usize].chars.clone(),
-            val: self.nodes.nodes[index as usize].val.clone(),
-            address: self.nodes.nodes[index as usize].address,
-        }
-    }
-
     pub fn save_to_file(&mut self, filename : &str) -> Result<(), Box<error::Error>> {
         let mut output_file = OpenOptions::new().write(true)
                                                 .truncate(true)
