@@ -4,18 +4,17 @@ pub const NAME_MAX_SIZE : usize = 40;
 pub const CPF_MAX_SIZE : usize = 15;
 pub const SALARY_MAX_SIZE : usize = 10;
 pub const DESCRIPTION_MAX_SIZE : usize = 50;
-pub const REGIME_MAX_SIZE : usize = 35;
 pub const DATA_MAX_SIZE : usize = 12;
 pub const DEDICACAO_MAX_SIZE : usize = 20;
 pub const DATA_ENTRY_SIZE : usize = NAME_MAX_SIZE + CPF_MAX_SIZE + SALARY_MAX_SIZE * 10
-                                    + DESCRIPTION_MAX_SIZE * 3 + DATA_MAX_SIZE * 4
-                                    + DEDICACAO_MAX_SIZE + REGIME_MAX_SIZE;
-pub const RECORD_SIZES : [usize; 21] = [NAME_MAX_SIZE, SALARY_MAX_SIZE, CPF_MAX_SIZE,
-                                        DESCRIPTION_MAX_SIZE, DESCRIPTION_MAX_SIZE, DESCRIPTION_MAX_SIZE,
+                                    + DESCRIPTION_MAX_SIZE * 2 + DATA_MAX_SIZE * 4
+                                    + DEDICACAO_MAX_SIZE;
+pub const RECORD_SIZES : [usize; 19] = [NAME_MAX_SIZE, SALARY_MAX_SIZE, CPF_MAX_SIZE,
+                                        DESCRIPTION_MAX_SIZE, DESCRIPTION_MAX_SIZE,
                                         SALARY_MAX_SIZE, SALARY_MAX_SIZE, SALARY_MAX_SIZE,
                                         SALARY_MAX_SIZE, SALARY_MAX_SIZE, SALARY_MAX_SIZE,
                                         SALARY_MAX_SIZE, SALARY_MAX_SIZE, SALARY_MAX_SIZE,
-                                        DATA_MAX_SIZE, DATA_MAX_SIZE, REGIME_MAX_SIZE,
+                                        DATA_MAX_SIZE, DATA_MAX_SIZE,
                                         DEDICACAO_MAX_SIZE, DATA_MAX_SIZE, DATA_MAX_SIZE];
 
 #[derive(PartialOrd, PartialEq, Default)]
@@ -24,7 +23,6 @@ pub struct Record {
     pub id: Vec<u8>,
     pub cpf: Vec<u8>,
     pub descricao_cargo: Vec<u8>,
-    pub orgao_lotacao: Vec<u8>,
     pub orgao_exercicio: Vec<u8>,
     pub remuneracao_basica_bruta_rs: Vec<u8>,
     pub gratificacao_natalina_rs: Vec<u8>,
@@ -37,7 +35,6 @@ pub struct Record {
     pub total_verbas_indenizatorias_rs: Vec<u8>,
     pub data_inicio_afastamento: Vec<u8>,
     pub data_termino_afastamento: Vec<u8>,
-    pub regime_contratacao: Vec<u8>,
     pub jornada_trabalho: Vec<u8>,
     pub data_ingresso_cargo: Vec<u8>,
     pub data_ingresso_orgao: Vec<u8>
@@ -58,10 +55,6 @@ impl Record {
 
     fn get_descricao_cargo(&self) -> &str {
         str::from_utf8(&self.descricao_cargo).unwrap()
-    }
-
-    fn get_orgao_lotacao(&self) -> &str {
-        str::from_utf8(&self.orgao_lotacao).unwrap()
     }
 
     fn get_orgao_exercicio(&self) -> &str {
@@ -112,10 +105,6 @@ impl Record {
         str::from_utf8(&self.data_termino_afastamento).unwrap()
     }
 
-    fn get_regime_contratacao(&self) -> &str {
-        str::from_utf8(&self.regime_contratacao).unwrap()
-    }
-
     fn get_jornada_trabalho(&self) -> &str {
         str::from_utf8(&self.jornada_trabalho).unwrap()
     }
@@ -128,13 +117,30 @@ impl Record {
         str::from_utf8(&self.data_ingresso_orgao).unwrap()
     }
 
+    pub fn generate_csv_string(&mut self) -> String {
+        let mut return_string : String = String::new();
+
+        return_string += &(self.get_name().to_owned() + &";".to_string());
+        return_string += &(self.get_descricao_cargo().to_owned() + &";".to_string());
+        return_string += &(self.get_orgao_exercicio().to_owned() + &";".to_string());
+        return_string += &(self.get_remuneracao_bruta().to_owned() + &";".to_string());
+        return_string += &(self.get_gratificacao_natalina().to_owned() + &";".to_string());
+        return_string += &(self.get_irrf().to_owned() + &";".to_string());
+        return_string += &(self.get_pss().to_owned() + &";".to_string());
+        return_string += &(self.get_demais_reducoes().to_owned() + &";".to_string());
+        return_string += &(self.get_remuneracao_apos_deducoes().to_owned() + &";".to_string());
+        return_string += self.get_verbas_indenizatorias(); // No ';' in the final one
+        return_string += "\n";
+
+        return return_string;
+    }
+
     pub fn as_u8_array(&mut self) -> Vec<u8> {
         let mut vec : Vec<u8> = Vec::new();
         vec.append(&mut self.nome);
         vec.append(&mut self.id);
         vec.append(&mut self.cpf);
         vec.append(&mut self.descricao_cargo);
-        vec.append(&mut self.orgao_lotacao);
         vec.append(&mut self.orgao_exercicio);
         vec.append(&mut self.remuneracao_basica_bruta_rs);
         vec.append(&mut self.gratificacao_natalina_rs);
@@ -147,7 +153,6 @@ impl Record {
         vec.append(&mut self.total_verbas_indenizatorias_rs);
         vec.append(&mut self.data_inicio_afastamento);
         vec.append(&mut self.data_termino_afastamento);
-        vec.append(&mut self.regime_contratacao);
         vec.append(&mut self.jornada_trabalho);
         vec.append(&mut self.data_ingresso_cargo);
         vec.append(&mut self.data_ingresso_orgao);
@@ -160,7 +165,6 @@ impl Record {
         self.id.resize(SALARY_MAX_SIZE, 0);
         self.cpf.resize(CPF_MAX_SIZE, 0);
         self.descricao_cargo.resize(DESCRIPTION_MAX_SIZE, 0);
-        self.orgao_lotacao.resize(DESCRIPTION_MAX_SIZE, 0);
         self.orgao_exercicio.resize(DESCRIPTION_MAX_SIZE, 0);
         self.remuneracao_basica_bruta_rs.resize(SALARY_MAX_SIZE, 0);
         self.gratificacao_natalina_rs.resize(SALARY_MAX_SIZE, 0);
@@ -173,7 +177,6 @@ impl Record {
         self.total_verbas_indenizatorias_rs.resize(SALARY_MAX_SIZE, 0);
         self.data_inicio_afastamento.resize(DATA_MAX_SIZE, 0);
         self.data_termino_afastamento.resize(DATA_MAX_SIZE, 0);
-        self.regime_contratacao.resize(REGIME_MAX_SIZE, 0);
         self.jornada_trabalho.resize(DEDICACAO_MAX_SIZE, 0);
         self.data_ingresso_cargo.resize(DATA_MAX_SIZE, 0);
         self.data_ingresso_orgao.resize(DATA_MAX_SIZE, 0);
@@ -185,7 +188,6 @@ impl fmt::Display for Record {
         write!(f, "Id do Servidor: {}\n\
                    Nome & CPF do Servidor Público: {} - {}\n\
                    Cargo: {}\n\
-                   Órgao de Lotação: {}\n\
                    Órgao em Exercício: {}\n\
                    Remuneração Bruta: R$ {}\n\
                    Gratificação Natalina: R${}\n\
@@ -197,19 +199,18 @@ impl fmt::Display for Record {
                    Remuneração Após Deduções Obrigatórias (IRRF+PSS): R$ {}\n\
                    Remuneração Provinda de Verbas Indenizatórias: R$ {}\n\
                    Data de Inicio e Termino do Afastamento: {} {}\n\
-                   Regime de Contratacao: {}\n\
                    Jornada de Trabalho: {}\n\
                    Data de Ingresso no Cargo: {}\n\
                    Data de Ingresso no Orgao: {}",
                    self.get_id(), self.get_name(), self.get_cpf(), self.get_descricao_cargo(),
-                   self.get_orgao_lotacao(), self.get_orgao_exercicio(),
+                   self.get_orgao_exercicio(),
                    self.get_remuneracao_bruta(), self.get_gratificacao_natalina(),
                    self.get_ferias(), self.get_outras_remuneracoes(), self.get_irrf(),
                    self.get_pss(), self.get_demais_reducoes(),
                    self.get_remuneracao_apos_deducoes(), self.get_verbas_indenizatorias(),
                    if self.data_inicio_afastamento.len() > 1 { self.get_data_inicio_afastamento() } else { "Não está afastado" },
                    if self.data_termino_afastamento.len() > 1 { "até ".to_owned() + self.get_data_termino_afastamento()} else { " ".to_string() },
-                   self.get_regime_contratacao(), self.get_jornada_trabalho(),
+                   self.get_jornada_trabalho(),
                    self.get_data_ingresso_cargo(), self.get_data_ingresso_orgao())
     }
 }
