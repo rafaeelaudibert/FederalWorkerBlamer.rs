@@ -13,11 +13,12 @@ use std::{error::Error,
 const DATABASE_FILE : &str = "database.bin";
 
 pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<(), Box<Error>> {
-    let mut csv_salary_reader = ReaderBuilder::new().delimiter(b';').from_path(salary_file)?;
+    let mut csv_salary_reader = ReaderBuilder::new().delimiter(b',').has_headers(false).from_path(salary_file)?;
     let mut csv_info_reader = ReaderBuilder::new().delimiter(b';').from_path(info_file)?;
     let mut output_file = File::create(DATABASE_FILE)?;
     let mut trie = trie::Trie::new();
     let mut counter : u32 = 0;
+
 
     let salary_values = csv_salary_reader.records().map(|r| r.unwrap());
     let mut info_values = csv_info_reader.records().map(|r| r.unwrap()).peekable();
