@@ -81,57 +81,61 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
     Ok(())
 }
 
-pub fn exceeds_database_size(entry_position : u32) -> bool {
+pub fn exceeds_database_size(entry_position : u64) -> bool {
     let metadata = fs::metadata(DATABASE_FILE).unwrap();
-    if metadata.len() > entry_position as u64 { false } else { true }
+    if metadata.len() > entry_position { false } else { true }
 }
 
-pub fn record_from_entry(entry: u32) -> Option<Record> {
-    record_from_offset(entry * record::DATA_ENTRY_SIZE as u32)
-}
-
-pub fn record_from_offset(offset : u32) -> Option<Record> {
-
-    if exceeds_database_size(offset) || offset <= 0 {
-        return None; // Checks if there is that many workers in the database
-    }
-
+pub fn records_from_entries(entries: Vec<u32>) -> Option<Vec<Record>> {
     let mut f = File::open(DATABASE_FILE).unwrap();
     let mut buffer : Vec<u8>;
-    let mut record = Record::default();
+    let mut record : Record;
+    let mut returned_records : Vec<Record> = Vec::new();
 
-    f.seek(SeekFrom::Start(offset as u64)).unwrap();
+    let mut current_offset : i64 = f.seek(SeekFrom::Start(0)).unwrap() as i64;
 
-    for (i, bytes) in record::RECORD_SIZES.iter().enumerate() {
+    for entry in entries {
+        current_offset = f.seek(SeekFrom::Current(((entry - 1) * record::DATA_ENTRY_SIZE as u32) as i64 - current_offset)).unwrap() as i64;
+        record = Record::default();
 
-        buffer = vec![0; *bytes as usize];
-        f.read_exact(&mut buffer).unwrap();
-
-        let text : &str = str::from_utf8(&buffer).unwrap().trim_matches(char::from(0));
-
-        match i {
-            0 => record.nome = text.as_bytes().to_vec(),
-            1 => record.id = text.as_bytes().to_vec(),
-            2 => record.cpf = text.as_bytes().to_vec(),
-            3 => record.descricao_cargo = text.as_bytes().to_vec(),
-            4 => record.orgao_exercicio = text.as_bytes().to_vec(),
-            5 => record.remuneracao_basica_bruta_rs = text.as_bytes().to_vec(),
-            6 => record.gratificacao_natalina_rs = text.as_bytes().to_vec(),
-            7 => record.ferias_rs = text.as_bytes().to_vec(),
-            8 => record.outras_remuneracoes_eventuais_rs = text.as_bytes().to_vec(),
-            9 => record.irrf_rs = text.as_bytes().to_vec(),
-            10 => record.pss_rgps_rs = text.as_bytes().to_vec(),
-            11 => record.demais_deducoes_rs = text.as_bytes().to_vec(),
-            12 => record.remuneracao_apos_deducoes_obrigatorias_rs = text.as_bytes().to_vec(),
-            13 => record.total_verbas_indenizatorias_rs = text.as_bytes().to_vec(),
-            14 => record.data_inicio_afastamento = text.as_bytes().to_vec(),
-            15 => record.data_termino_afastamento = text.as_bytes().to_vec(),
-            16 => record.jornada_trabalho = text.as_bytes().to_vec(),
-            17 => record.data_ingresso_cargo = text.as_bytes().to_vec(),
-            18 => record.data_ingresso_orgao = text.as_bytes().to_vec(),
-            _ => println!("Error!!")
+        if exceeds_database_size(current_offset as u64) {
+            continue; // Checks if there is that many workers in the database
         }
+
+        for (i, bytes) in record::RECORD_SIZES.iter().enumerate() {
+
+            buffer = vec![0; *bytes as usize];
+            f.read_exact(&mut buffer).unwrap();
+
+            let text : &str = str::from_utf8(&buffer).unwrap().trim_matches(char::from(0));
+
+            match i {
+                0 => record.nome = text.as_bytes().to_vec(),
+                1 => record.id = text.as_bytes().to_vec(),
+                2 => record.cpf = text.as_bytes().to_vec(),
+                3 => record.descricao_cargo = text.as_bytes().to_vec(),
+                4 => record.orgao_exercicio = text.as_bytes().to_vec(),
+                5 => record.remuneracao_basica_bruta_rs = text.as_bytes().to_vec(),
+                6 => record.gratificacao_natalina_rs = text.as_bytes().to_vec(),
+                7 => record.ferias_rs = text.as_bytes().to_vec(),
+                8 => record.outras_remuneracoes_eventuais_rs = text.as_bytes().to_vec(),
+                9 => record.irrf_rs = text.as_bytes().to_vec(),
+                10 => record.pss_rgps_rs = text.as_bytes().to_vec(),
+                11 => record.demais_deducoes_rs = text.as_bytes().to_vec(),
+                12 => record.remuneracao_apos_deducoes_obrigatorias_rs = text.as_bytes().to_vec(),
+                13 => record.total_verbas_indenizatorias_rs = text.as_bytes().to_vec(),
+                14 => record.data_inicio_afastamento = text.as_bytes().to_vec(),
+                15 => record.data_termino_afastamento = text.as_bytes().to_vec(),
+                16 => record.jornada_trabalho = text.as_bytes().to_vec(),
+                17 => record.data_ingresso_cargo = text.as_bytes().to_vec(),
+                18 => record.data_ingresso_orgao = text.as_bytes().to_vec(),
+                _ => println!("Error!!")
+            }
+        }
+
+        returned_records.push(record);
+        current_offset += record::DATA_ENTRY_SIZE as i64;
     }
 
-    Some(record)
+    Some(returned_records)
 }

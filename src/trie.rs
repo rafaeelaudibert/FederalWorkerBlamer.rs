@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::{error, str, io::{Read, Write, Seek, SeekFrom}, fs::{File, OpenOptions}};
+use std::{error, str, io::{Read, Write, Seek, SeekFrom}, fs::{self, File, OpenOptions}};
 use std::mem::transmute;
 use record;
 use parser;
@@ -32,6 +32,25 @@ impl Trie {
         }
     }
 
+    pub fn at(&mut self, string: String) -> Option<Vec<u32>> {
+        let mut node = self.node_at(self.root);
+        for c in string.chars() {
+            if node.chars.contains_key(&c) {
+                node = self.node_at(*node.chars.get(&c).unwrap());
+            } else {
+                return None;
+            }
+        }
+         return Some(node.val.clone());
+    }
+     fn node_at(&self, index : u32) -> Node {
+        Node {
+            chars: self.nodes.nodes[index as usize].chars.clone(),
+            val: self.nodes.nodes[index as usize].val.clone(),
+            address: self.nodes.nodes[index as usize].address,
+        }
+    }
+
     pub fn new_from_database(trie_file : String, record_index : usize) -> Result<(), Box<error::Error>> {
         let mut trie = Trie::new();
         let mut f = File::open(parser::DATABASE_FILE)?;
@@ -39,9 +58,8 @@ impl Trie {
         let mut record = record::Record::default();
         let mut record_counter = 0;
 
-        while !parser::exceeds_database_size(record_counter * record::DATA_ENTRY_SIZE as u32) {
+        while !parser::exceeds_database_size(record_counter * record::DATA_ENTRY_SIZE as u64) {
             //println!("{}", record_counter);
-
             for (i, bytes) in record::RECORD_SIZES.iter().enumerate() {
 
                 buffer = vec![0; *bytes as usize];
@@ -73,7 +91,7 @@ impl Trie {
                 }
             }
 
-            trie.add(record.get(record_index), record_counter + 1);
+            trie.add(record.get(record_index), record_counter as u32 + 1);
             record_counter += 1;
         }
 
@@ -82,6 +100,61 @@ impl Trie {
         }
 
         Ok(())
+    }
+
+    pub fn new_from_file(trie_file : String) -> Result<Trie, Box<error::Error>> {
+        let mut trie = Trie {
+                            nodes: Arena {
+                                nodes: Vec::new(),
+                            },
+                            root: 0,
+                        };
+
+        let mut f = File::open(&trie_file)?;
+        let metadata = fs::metadata(&trie_file)?.len();
+
+        while f.seek(SeekFrom::Current(0))? < metadata {
+
+            let mut node : Node = Node::default();
+
+            // 1st, we catch the values stored in it
+            let mut values_len = vec![0; 2];
+            f.read_exact(&mut values_len)?;
+
+            let mut values = vec![0; (values_len[0] as u16 + ((values_len[1] as u16) << 8)) as usize * 4];
+            let mut node_values : Vec<u32> = Vec::new();
+            f.read_exact(&mut values)?;
+
+            for x in 0..values.len()/4 {
+                node_values.push(((values[x*4 + 0] as u32) << 0) + ((values[x*4 + 1] as u32) << 8)
+                                 + ((values[x*4 + 2] as u32) << 16) + ((values[x*4 + 3] as u32) << 24));
+            }
+            node.val = node_values;
+
+            // 2nd, we read the quantity of children
+            let mut children_len = vec![0; 1];
+            f.read_exact(&mut children_len)?;
+
+            // 3rd, we read the characters
+            for _ in 0..children_len[0] {
+                let mut mapped_char = vec![0; 1];
+                let mut mapped_arena_position = vec![0; 4];
+                let mut _mapped_address = vec![0; 4];
+
+                f.read_exact(&mut mapped_char)?;
+                f.read_exact(&mut mapped_arena_position)?;
+                f.read_exact(&mut _mapped_address)?;
+
+                node.chars.insert(mapped_char[0] as char, ((mapped_arena_position[0] as u32) << 0) + ((mapped_arena_position[1] as u32) << 8)
+                                                        + ((mapped_arena_position[2] as u32) << 16) + ((mapped_arena_position[3] as u32) << 24));
+            }
+
+            trie.nodes.nodes.push(node);
+        }
+
+        trie.save_to_file(&trie_file)?;
+
+        return Ok(trie)
     }
 
     pub fn add(&mut self, string: String, val: u32) {
@@ -118,24 +191,25 @@ impl Trie {
 
             //let mut parsed_node : Vec<u8> = Vec::new();
 
-            // parsed_node.push(node.val.len() as u8);
-            counter += 1; // 1 byte for the node value vector length (quantity of values)
+            // parsed_node.push(self.nodes.nodes[node_index].val.len() as u8);
+            // parsed_node.push((self.nodes.nodes[node_index].val.len() >> 8) as u8)
+            counter += 2; // 1 byte for the node value vector length (quantity of values)
 
-            // for val in node.val.iter() {
+            // for val in self.nodes.nodes[node_index].val.iter() {
             //     let bytes: [u8; 4] = unsafe { transmute(val.to_le()) };
             //     parsed_node.append(&mut bytes.to_vec());
             // }
             counter += node.val.len() as u32 * 4; // 4 bytes for each entry in the node value vector length
 
-            // parsed_node.push(node.chars.len() as u8);
+            // parsed_node.push(self.nodes.nodes[node_index].chars.len() as u8);
             counter += 1; // 1 byte for the node characters vector length (quantity of children)
 
-            // for (key, _value) in node.chars.iter() {
+            // for (key, value) in self.nodes.nodes[node_index].chars.iter() {
             //     parsed_node.push(*key as u8);
             //     let node_address: [u8; 4] = unsafe { transmute(self.nodes.nodes[*value as usize].address.to_le()) };
             //     parsed_node.append(&mut node_address.to_vec());
             // }
-            counter += node.chars.len() as u32 * 5; // 1 byte for the value of the char and 4 bytes for the address for each of the mapped chars
+            counter += node.chars.len() as u32 * 9; // 1 byte for the value of the char, 4 bytes for their arena position and 4 bytes for the address for each of the mapped chars
 
         }
 
@@ -145,6 +219,7 @@ impl Trie {
 
             // Append the length of the vector with the value of the node
             parsed_node.push(self.nodes.nodes[node_index].val.len() as u8);
+            parsed_node.push((self.nodes.nodes[node_index].val.len() >> 8) as u8);
 
             // Append the vector with the value of the node
             for val in self.nodes.nodes[node_index].val.iter() {
@@ -155,9 +230,12 @@ impl Trie {
             // Append the quantity of children
             parsed_node.push(self.nodes.nodes[node_index].chars.len() as u8);
 
-            // Append the children letter, and 4 bytes which will hold their address in the disk in the future
+            // Append the children letter, their position in the arena and 4 bytes which hold their address in the disk in the future
             for (key, value) in self.nodes.nodes[node_index].chars.iter() {
                 parsed_node.push(*key as u8);
+
+                let arena_index: [u8; 4] = unsafe { transmute(value.to_le()) };
+                parsed_node.append(&mut arena_index.to_vec());
 
                 let node_address: [u8; 4] = unsafe { transmute(self.nodes.nodes[*value as usize].address.to_le()) };
                 parsed_node.append(&mut node_address.to_vec());
@@ -177,9 +255,9 @@ impl Trie {
             for character in string.chars() {
 
                 // 1st, we jump the values stored in it
-                let mut values_len = vec![0; 1];
+                let mut values_len = vec![0; 2];
                 input_file.read_exact(&mut values_len)?;
-                input_file.read_exact(&mut vec![0; values_len[0] as usize * 4 as usize])?;
+                input_file.read_exact(&mut vec![0; (values_len[0] as u16 + ((values_len[1] as u16) << 8)) as usize * 4 as usize])?;
 
                 // 2nd, we read the quantity of children
                 let mut children_len = vec![0; 1];
@@ -189,8 +267,10 @@ impl Trie {
                 let mut found = false;
                 for _ in 0..children_len[0] {
                     let mut mapped_char = vec![0; 1];
+                    let mut _mapped_arena_position = vec![0; 4];
                     let mut mapped_address = vec![0; 4];
                     input_file.read_exact(&mut mapped_char)?;
+                    input_file.read_exact(&mut _mapped_arena_position)?;
                     input_file.read_exact(&mut mapped_address)?;
 
                     if mapped_char[0] as char == character { // Found the future address, need to parse it
@@ -207,16 +287,16 @@ impl Trie {
                 } // Else, I'm already in the new place to search for, 'cause I file-seeked to the new position
             }
             // Fetch the values and return it
-            let mut values_len = vec![0; 1];
+            let mut values_len = vec![0; 2];
             input_file.read_exact(&mut values_len)?;
 
-            let mut values = vec![0; values_len[0] as usize * 4];
+            let mut values = vec![0; (values_len[0] as u16 + ((values_len[1] as u16) << 8)) as usize * 4 as usize];
             input_file.read_exact(&mut values)?;
 
             let mut parsed_values : Vec<u32> = Vec::new();
-            for x in 0..values_len[0] {
-                let parsed_value : u32 = ((values[(x*4 + 0) as usize] as u32) << 0) + ((values[(x*4 + 1) as usize] as u32) << 8)
-                                       + ((values[(x*4 + 2) as usize] as u32) << 16) + ((values[(x*4 + 3) as usize] as u32) << 24);
+            for x in 0..values.len() / 4 {
+                let parsed_value : u32 = ((values[(x as usize * 4 + 0) as usize] as u32) << 0) + ((values[(x as usize * 4 + 1) as usize] as u32) << 8)
+                                       + ((values[(x as usize * 4 + 2) as usize] as u32) << 16) + ((values[(x as usize * 4 + 3) as usize] as u32) << 24);
                 parsed_values.push(parsed_value);
             }
 

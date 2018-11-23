@@ -1,4 +1,5 @@
 use std::{fmt, str};
+use std::{io::{self, Write}, process, time::Instant};
 
 pub const NAME_MAX_SIZE : usize = 40;
 pub const CPF_MAX_SIZE : usize = 15;
@@ -41,6 +42,89 @@ pub struct Record {
 }
 
 impl Record {
+
+    pub fn new_from_stdin() -> Record {
+
+        print!("Digite o seu nome: "); io::stdout().flush().unwrap();
+        let str_nome : String = read!("{}\n"); let nome = str_nome.as_bytes().to_vec();
+
+        print!("Digite o seu ID: "); io::stdout().flush().unwrap();
+        let str_id : String = read!("{}\n"); let id = str_id.as_bytes().to_vec();
+
+        print!("Digite o seu CPF: "); io::stdout().flush().unwrap();
+        let str_cpf : String = read!("{}\n"); let cpf = str_cpf.as_bytes().to_vec();
+
+        print!("Digite o seu cargo: "); io::stdout().flush().unwrap();
+        let str_cargo : String = read!("{}\n"); let cargo = str_cargo.as_bytes().to_vec();
+
+        print!("Digite o órgão em que você trabalha: "); io::stdout().flush().unwrap();
+        let str_orgao : String = read!("{}\n"); let orgao = str_orgao.as_bytes().to_vec();
+
+        print!("Digite a sua remuneração básica bruta : R$ "); io::stdout().flush().unwrap();
+        let str_remuneracao_bruta : String = read!("{}\n"); let remuneracao_bruta = str_remuneracao_bruta.as_bytes().to_vec();
+
+        print!("Digite o valor da sua gratificação natalina: R$ "); io::stdout().flush().unwrap();
+        let str_gratificacao_natalina : String = read!("{}\n"); let gratificacao_natalina = str_gratificacao_natalina.as_bytes().to_vec();
+
+        print!("Digite o valor das suas férias: R$ "); io::stdout().flush().unwrap();
+        let str_ferias : String = read!("{}\n"); let ferias = str_ferias.as_bytes().to_vec();
+
+        print!("Digite o valor de outras remunerações eventuais: R$ "); io::stdout().flush().unwrap();
+        let str_remuneracoes_eventuais : String = read!("{}\n"); let remuneracoes_eventuais = str_remuneracoes_eventuais.as_bytes().to_vec();
+
+        print!("Digite o valor que você paga de IRRF: R$ "); io::stdout().flush().unwrap();
+        let str_irrf : String = read!("{}\n"); let irrf = str_irrf.as_bytes().to_vec();
+
+        print!("Digite o valor que você paga de PSS: R$ "); io::stdout().flush().unwrap();
+        let str_pss : String = read!("{}\n"); let pss = str_pss.as_bytes().to_vec();
+
+        print!("Digite o valor das demais deduções: R$ "); io::stdout().flush().unwrap();
+        let str_demais_deducoes : String = read!("{}\n"); let demais_deducoes = str_demais_deducoes.as_bytes().to_vec();
+
+        print!("Digite a sua remuneração após as deduções: R$ "); io::stdout().flush().unwrap();
+        let str_remuneracao_liquida : String = read!("{}\n"); let remuneracao_liquida = str_remuneracao_liquida.as_bytes().to_vec();
+
+        print!("Digite o valor recebido por verbas indenizatórias: R$ "); io::stdout().flush().unwrap();
+        let str_verbas_indenizatorias : String = read!("{}\n"); let verbas_indenizatorias = str_verbas_indenizatorias.as_bytes().to_vec();
+
+        print!("Digite a data de início do seu afastamento (caso esteja afastado): "); io::stdout().flush().unwrap();
+        let str_inicio_afastamento : String = read!("{}\n"); let inicio_afastamento = str_inicio_afastamento.as_bytes().to_vec();
+
+        print!("Digite a data de término do seu afastamento (caso esteja afastado): "); io::stdout().flush().unwrap();
+        let str_termino_afastamento : String = read!("{}\n"); let termino_afastamento = str_termino_afastamento.as_bytes().to_vec();
+
+        print!("Digite a sua jornada de trabalho: "); io::stdout().flush().unwrap();
+        let str_jornada : String = read!("{}\n"); let jornada = str_jornada.as_bytes().to_vec();
+
+        print!("Digite a sua data de ingresso no cargo: "); io::stdout().flush().unwrap();
+        let str_ingresso_cargo : String = read!("{}\n"); let ingresso_cargo = str_ingresso_cargo.as_bytes().to_vec();
+
+        print!("Digite a sua data de ingresso no órgão: "); io::stdout().flush().unwrap();
+        let str_ingresso_orgao : String = read!("{}\n"); let ingresso_orgao = str_ingresso_orgao.as_bytes().to_vec();
+
+        Record {
+            nome: nome,
+            id: id,
+            cpf: cpf,
+            descricao_cargo: cargo,
+            orgao_exercicio: orgao,
+            remuneracao_basica_bruta_rs: remuneracao_bruta,
+            gratificacao_natalina_rs: gratificacao_natalina,
+            ferias_rs: ferias,
+            outras_remuneracoes_eventuais_rs: remuneracoes_eventuais,
+            irrf_rs: irrf,
+            pss_rgps_rs: pss,
+            demais_deducoes_rs: demais_deducoes,
+            remuneracao_apos_deducoes_obrigatorias_rs: remuneracao_liquida,
+            total_verbas_indenizatorias_rs: verbas_indenizatorias,
+            data_inicio_afastamento: inicio_afastamento,
+            data_termino_afastamento: termino_afastamento,
+            jornada_trabalho: jornada,
+            data_ingresso_cargo: ingresso_cargo,
+            data_ingresso_orgao: ingresso_orgao
+        }
+    }
+
     fn get_name(&self) -> &str {
         str::from_utf8(&self.nome).unwrap()
     }

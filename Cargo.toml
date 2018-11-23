@@ -7,3 +7,4 @@ authors = ["Rafael Audibert <rbaudibert@inf.ufrgs.br>"]
 csv = "1"
 clap = "~2.27.0"
 prettytable-rs = "^0.8"
+text_io = "0.1.7"
