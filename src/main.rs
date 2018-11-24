@@ -148,7 +148,23 @@ fn main() {
     }
 }
 
+fn clear_screen(wait : bool) {
+    if wait {
+        print!("Press a key to continue...");
+        io::stdout().flush().unwrap();
+        let _ : String = if cfg!(windows) {
+            read!("{}\r\n")
+        } else {
+            read!("{}\n")
+        };
+    };
+
+    print!("{}[2J", 27 as char);
+}
+
 fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
+    clear_screen(false);
+
     let mut name_memory_trie: trie::Trie =
         if let Ok(new_trie) = trie::Trie::new_from_file("name_memory_trie.bin".to_string()) {
             new_trie
@@ -189,7 +205,7 @@ fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
 
         match input.as_bytes()[0] - 0x30 {
             1 => {
-                println!("You must pass TWO CSV files to this. The Remuneracao one, and the Cadastro one.");
+                println!("\nYou must pass TWO CSV files to this. The Remuneracao one, and the Cadastro one.");
                 print!("Remuneracao file: ");
                 io::stdout().flush().unwrap();
                 let remuneracao_file: String = if cfg!(windows) {
@@ -205,7 +221,7 @@ fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
                 } else {
                     read!("{}\n")
                 };
-                print!("The CSV files passed in are being parsed to generate the database file.");
+                print!("\nThe CSV files passed in are being parsed to generate the database file.");
                 io::stdout().flush().unwrap();
 
                 let before: Instant = Instant::now();
@@ -216,9 +232,10 @@ fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
                 );
 
                 reparse_tries().unwrap();
+                clear_screen(true);
             }
             2 => {
-                print!("Name of the to-be-searched person: ");
+                print!("\nName of the to-be-searched person: ");
                 io::stdout().flush().unwrap();
                 let query: String = if cfg!(windows) {
                     read!("{}\r\n")
@@ -226,9 +243,10 @@ fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
                     read!("{}\n")
                 };
                 display_entries(search_person(query));
+                clear_screen(true);
             }
             3 => {
-                print!("Name of the to-be-searched role: ");
+                print!("\nName of the to-be-searched role: ");
                 io::stdout().flush().unwrap();
                 let query: String = if cfg!(windows) {
                     read!("{}\r\n")
@@ -236,9 +254,10 @@ fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
                     read!("{}\n")
                 };
                 display_entries(search_role(query));
+                clear_screen(true);
             }
             4 => {
-                print!("Name of the to-be-searched agency: ");
+                print!("\nName of the to-be-searched agency: ");
                 io::stdout().flush().unwrap();
                 let query: String = if cfg!(windows) {
                     read!("{}\r\n")
@@ -246,6 +265,7 @@ fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
                     read!("{}\n")
                 };
                 display_entries(search_agency(query));
+                clear_screen(true);
             }
             5 => {
                 create_new_entry(
@@ -253,15 +273,20 @@ fn interactive_mode(prefix_search : bool) -> Result<(), Box<error::Error>> {
                     &mut role_memory_trie,
                     &mut agency_memory_trie,
                 ).unwrap();
+                clear_screen(true);
             }
             6 => {
                 reparse_tries().unwrap();
+                clear_screen(true);
             }
             7 => {
                 println!("Bye bye! It was nice to have you here!! :(");
                 break;
             },
-            _ => println!("INVALID CHOICE!!"),
+            _ => {
+                println!("\nINVALID CHOICE!!");
+                clear_screen(true);
+            },
         }
     }
 
@@ -297,7 +322,7 @@ fn display_entries(entries: Vec<u32>) {
         for mut record in records {
             csv_string += &record.generate_csv_string()
         }
-        println!("Time elapsed: {:?}", Instant::now().duration_since(before));
+        println!("\nTime elapsed: {:?}", Instant::now().duration_since(before));
 
         // Create the table
         let mut table = Table::from_csv(
@@ -453,7 +478,7 @@ fn reparse_tries() -> Result<(), Box<error::Error>> {
             process::exit(1);
         }
         println!(
-            "Time elapsed for name-indexed trie: {:?}",
+            "\nTime elapsed for name-indexed trie: {:?}",
             Instant::now().duration_since(before)
         );
     }));
@@ -467,7 +492,7 @@ fn reparse_tries() -> Result<(), Box<error::Error>> {
             process::exit(1);
         }
         println!(
-            "Time elapsed for role-indexed trie: {:?}",
+            "\nTime elapsed for role-indexed trie: {:?}",
             Instant::now().duration_since(before)
         );
     }));
@@ -481,7 +506,7 @@ fn reparse_tries() -> Result<(), Box<error::Error>> {
             process::exit(1);
         }
         println!(
-            "Time elapsed for agency-indexed trie: {:?}",
+            "\nTime elapsed for agency-indexed trie: {:?}",
             Instant::now().duration_since(before)
         );
     }));
