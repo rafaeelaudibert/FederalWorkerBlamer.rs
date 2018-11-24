@@ -1,41 +1,55 @@
-use record;
-use record::{Record};
 use csv::{ReaderBuilder, StringRecord};
-use std::{error::Error,
-          str,
-          fs,
-          fs::File,
-          io::{self, Seek, SeekFrom, Read, Write}
-         };
+use record;
+use record::Record;
+use std::{
+    error::Error,
+    fs,
+    fs::File,
+    io::{self, Read, Seek, SeekFrom, Write},
+    str,
+};
 
+pub const DATABASE_FILE: &str = "database.bin";
 
-pub const DATABASE_FILE : &str = "database.bin";
-
-pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<(), Box<Error>> {
-    let mut csv_salary_reader = ReaderBuilder::new().delimiter(b',').has_headers(false).from_path(salary_file)?;
+pub fn generate_database_files(salary_file: &str, info_file: &str) -> Result<(), Box<Error>> {
+    let mut csv_salary_reader = ReaderBuilder::new()
+        .delimiter(b',')
+        .has_headers(false)
+        .from_path(salary_file)?;
     let mut csv_info_reader = ReaderBuilder::new().delimiter(b';').from_path(info_file)?;
     let mut output_file = File::create(DATABASE_FILE)?;
-    let mut counter : u32 = 0;
-
+    let mut counter: u32 = 0;
 
     let salary_values = csv_salary_reader.records().map(|r| r.unwrap());
     let mut info_values = csv_info_reader.records().map(|r| r.unwrap()).peekable();
-    let mut sem_informacao_vec : Vec<u8> = Vec::new();
+    let mut sem_informacao_vec: Vec<u8> = Vec::new();
 
-    for elem in vec!(83, 101, 109, 32, 105, 110, 102, 111, 114, 109, 97, 239, 191, 189, 239, 191, 189, 111) {
+    for elem in vec![
+        83, 101, 109, 32, 105, 110, 102, 111, 114, 109, 97, 239, 191, 189, 239, 191, 189, 111,
+    ] {
         sem_informacao_vec.push(elem);
     }
 
     for salary_value in salary_values {
-
-        let mut info_value : StringRecord = StringRecord::new();
+        let mut info_value: StringRecord = StringRecord::new();
         while let Some(possible_info_value) = Some(info_values.next().unwrap()) {
-            if possible_info_value.get(0).unwrap().as_bytes().to_vec() != salary_value[2].as_bytes().to_vec() {
+            if possible_info_value.get(0).unwrap().as_bytes().to_vec()
+                != salary_value[2].as_bytes().to_vec()
+            {
                 continue;
-            } else if possible_info_value.get(4).unwrap().as_bytes().to_vec() != sem_informacao_vec {
+            } else if possible_info_value.get(4).unwrap().as_bytes().to_vec() != sem_informacao_vec
+            {
                 info_value = possible_info_value; // Primeira entrada com aquele ID tem uma profissao
                 break;
-            } else if info_values.peek().unwrap().get(0).unwrap().as_bytes().to_vec() == salary_value[2].as_bytes().to_vec() {
+            } else if info_values
+                .peek()
+                .unwrap()
+                .get(0)
+                .unwrap()
+                .as_bytes()
+                .to_vec()
+                == salary_value[2].as_bytes().to_vec()
+            {
                 // Ultima posição não tinha profissão, mas próxima vai ter, então pego a proxima
                 info_value = info_values.next().unwrap();
                 break;
@@ -65,7 +79,7 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
             data_termino_afastamento: info_value[30].as_bytes().to_vec(),
             jornada_trabalho: info_value[32].as_bytes().to_vec(),
             data_ingresso_cargo: info_value[33].as_bytes().to_vec(),
-            data_ingresso_orgao: info_value[35].as_bytes().to_vec()
+            data_ingresso_orgao: info_value[35].as_bytes().to_vec(),
         };
 
         record.resize();
@@ -81,21 +95,28 @@ pub fn generate_database_files(salary_file : &str, info_file: &str) -> Result<()
     Ok(())
 }
 
-pub fn exceeds_database_size(entry_position : u64) -> bool {
+pub fn exceeds_database_size(entry_position: u64) -> bool {
     let metadata = fs::metadata(DATABASE_FILE).unwrap();
-    if metadata.len() > entry_position { false } else { true }
+    if metadata.len() > entry_position {
+        false
+    } else {
+        true
+    }
 }
 
 pub fn records_from_entries(entries: Vec<u32>) -> Option<Vec<Record>> {
     let mut f = File::open(DATABASE_FILE).unwrap();
-    let mut buffer : Vec<u8>;
-    let mut record : Record;
-    let mut returned_records : Vec<Record> = Vec::new();
+    let mut buffer: Vec<u8>;
+    let mut record: Record;
+    let mut returned_records: Vec<Record> = Vec::new();
 
-    let mut current_offset : i64 = f.seek(SeekFrom::Start(0)).unwrap() as i64;
+    let mut current_offset: i64 = f.seek(SeekFrom::Start(0)).unwrap() as i64;
 
     for entry in entries {
-        current_offset = f.seek(SeekFrom::Current(((entry - 1) * record::DATA_ENTRY_SIZE as u32) as i64 - current_offset)).unwrap() as i64;
+        current_offset = f
+            .seek(SeekFrom::Current(
+                ((entry - 1) * record::DATA_ENTRY_SIZE as u32) as i64 - current_offset,
+            )).unwrap() as i64;
         record = Record::default();
 
         if exceeds_database_size(current_offset as u64) {
@@ -103,11 +124,10 @@ pub fn records_from_entries(entries: Vec<u32>) -> Option<Vec<Record>> {
         }
 
         for (i, bytes) in record::RECORD_SIZES.iter().enumerate() {
-
             buffer = vec![0; *bytes as usize];
             f.read_exact(&mut buffer).unwrap();
 
-            let text : &str = str::from_utf8(&buffer).unwrap().trim_matches(char::from(0));
+            let text: &str = str::from_utf8(&buffer).unwrap().trim_matches(char::from(0));
 
             match i {
                 0 => record.nome = text.as_bytes().to_vec(),
@@ -129,7 +149,7 @@ pub fn records_from_entries(entries: Vec<u32>) -> Option<Vec<Record>> {
                 16 => record.jornada_trabalho = text.as_bytes().to_vec(),
                 17 => record.data_ingresso_cargo = text.as_bytes().to_vec(),
                 18 => record.data_ingresso_orgao = text.as_bytes().to_vec(),
-                _ => println!("Error!!")
+                _ => println!("Error!!"),
             }
         }
 
