@@ -81,7 +81,16 @@ impl Trie {
                 }
             }
 
-            trie.add(record.get(record_index), record_counter as u32 + 1);
+            let value = record.get(record_index);
+            let split : Vec<&str> = value.split_whitespace().collect();
+
+            trie.add(record.get(record_index), record_counter as u32 + 1); // Add the entire string
+            for string in split {
+                if string.len() > 3 {
+                    trie.add(string.to_string(), record_counter as u32 + 1); // Add each of the words
+                }
+            }
+
             record_counter += 1;
         }
 
@@ -246,6 +255,7 @@ impl Trie {
     pub fn at_from_file(
         string: &str,
         filename: &str,
+        prefix_search: bool,
     ) -> Result<Option<Vec<u32>>, Box<error::Error>> {
         let mut input_file = OpenOptions::new().read(true).open(filename)?;
 
@@ -291,27 +301,88 @@ impl Trie {
                     return Ok(None);
                 } // Else, I'm already in the new place to search for, 'cause I file-seeked to the new position
             }
-            // Fetch the values and return it
-            let mut values_len = vec![0; 2];
-            input_file.read_exact(&mut values_len)?;
 
-            let mut values = vec![
-                0;
-                (values_len[0] as u16 + ((values_len[1] as u16) << 8)) as usize
-                    * 4 as usize
-            ];
-            input_file.read_exact(&mut values)?;
+            if prefix_search {
+                // I need to fetch all the nodes behind me
+                let mut queue: Vec<u32> =
+                    vec![input_file.seek(SeekFrom::Current(0)).unwrap() as u32];
+                let mut parsed_values: Vec<u32> = Vec::new();
 
-            let mut parsed_values: Vec<u32> = Vec::new();
-            for x in 0..values.len() / 4 {
-                let parsed_value: u32 = ((values[(x as usize * 4 + 0) as usize] as u32) << 0)
-                    + ((values[(x as usize * 4 + 1) as usize] as u32) << 8)
-                    + ((values[(x as usize * 4 + 2) as usize] as u32) << 16)
-                    + ((values[(x as usize * 4 + 3) as usize] as u32) << 24);
-                parsed_values.push(parsed_value);
+                while queue.len() > 0 {
+                    // Retira um nodo por vez da fila, e pega o seu valor
+                    let offset: u32 = queue.remove(0);
+
+                    input_file.seek(SeekFrom::Start(offset as u64)).unwrap();
+
+                    // 1st, we retrieve the values and fill the parsed_values array
+                    let mut values_len = vec![0; 2];
+                    input_file.read_exact(&mut values_len)?;
+
+                    let mut values = vec![
+                        0;
+                        (values_len[0] as u16 + ((values_len[1] as u16) << 8))
+                            as usize
+                            * 4 as usize
+                    ];
+                    input_file.read_exact(&mut values)?;
+
+                    for x in 0..values.len() / 4 {
+                        let parsed_value: u32 = ((values[(x as usize * 4 + 0) as usize] as u32)
+                            << 0)
+                            + ((values[(x as usize * 4 + 1) as usize] as u32) << 8)
+                            + ((values[(x as usize * 4 + 2) as usize] as u32) << 16)
+                            + ((values[(x as usize * 4 + 3) as usize] as u32) << 24);
+                        parsed_values.push(parsed_value);
+                    }
+
+                    // 2nd, we read the quantity of children
+                    let mut children_len = vec![0; 1];
+                    input_file.read_exact(&mut children_len)?;
+
+                    // 3rd, we search for the places we should still seek for in the file
+                    for _ in 0..children_len[0] {
+                        let mut _mapped_char = vec![0; 1];
+                        let mut _mapped_arena_position = vec![0; 4];
+                        let mut mapped_address = vec![0; 4];
+                        input_file.read_exact(&mut _mapped_char)?;
+                        input_file.read_exact(&mut _mapped_arena_position)?;
+                        input_file.read_exact(&mut mapped_address)?;
+
+                        // Found the future address, need to parse it
+                        let offset: u32 = ((mapped_address[0] as u32) << 0)
+                            + ((mapped_address[1] as u32) << 8)
+                            + ((mapped_address[2] as u32) << 16)
+                            + ((mapped_address[3] as u32) << 24);
+                        queue.push(offset);
+                    }
+                }
+
+                return Ok(Some(parsed_values));
+            } else {
+                // I only need to fetch myself
+                // Fetch the values and return it
+                let mut values_len = vec![0; 2];
+                input_file.read_exact(&mut values_len)?;
+
+                let mut values = vec![
+                    0;
+                    (values_len[0] as u16 + ((values_len[1] as u16) << 8))
+                        as usize
+                        * 4 as usize
+                ];
+                input_file.read_exact(&mut values)?;
+
+                let mut parsed_values: Vec<u32> = Vec::new();
+                for x in 0..values.len() / 4 {
+                    let parsed_value: u32 = ((values[(x as usize * 4 + 0) as usize] as u32) << 0)
+                        + ((values[(x as usize * 4 + 1) as usize] as u32) << 8)
+                        + ((values[(x as usize * 4 + 2) as usize] as u32) << 16)
+                        + ((values[(x as usize * 4 + 3) as usize] as u32) << 24);
+                    parsed_values.push(parsed_value);
+                }
+
+                return Ok(Some(parsed_values));
             }
-
-            return Ok(Some(parsed_values));
         }
 
         Ok(None)

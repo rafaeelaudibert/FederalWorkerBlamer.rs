@@ -66,111 +66,133 @@ pub fn interactive_mode(prefix_search: bool) -> Result<(), Box<error::Error>> {
             read!("{}\n")
         };
 
-        match input.as_bytes()[0] - 0x30 {
-            1 => {
-                println!("\nYou must pass TWO CSV files to this. The Remuneracao one, and the Cadastro one.");
-                print!("Remuneracao file: ");
-                io::stdout().flush().unwrap();
-                let remuneracao_file: String = if cfg!(windows) {
-                    read!("{}\r\n")
-                } else {
-                    read!("{}\n")
-                };
+        if input.as_bytes().len() > 0 {
+            match input.as_bytes()[0] - 0x30 {
+                1 => {
+                    println!("\nYou must pass TWO CSV files to this. The Remuneracao one, and the Cadastro one.");
+                    print!("Remuneracao file: ");
+                    io::stdout().flush().unwrap();
+                    let remuneracao_file: String = if cfg!(windows) {
+                        read!("{}\r\n")
+                    } else {
+                        read!("{}\n")
+                    };
 
-                print!("Cadastro file: ");
-                io::stdout().flush().unwrap();
-                let cadastro_file: String = if cfg!(windows) {
-                    read!("{}\r\n")
-                } else {
-                    read!("{}\n")
-                };
-                print!("\nThe CSV files passed in are being parsed to generate the database file.");
-                io::stdout().flush().unwrap();
+                    print!("Cadastro file: ");
+                    io::stdout().flush().unwrap();
+                    let cadastro_file: String = if cfg!(windows) {
+                        read!("{}\r\n")
+                    } else {
+                        read!("{}\n")
+                    };
+                    print!("\nThe CSV files passed in are being parsed to generate the database file.");
+                    io::stdout().flush().unwrap();
 
-                let before: Instant = Instant::now();
-                parser::generate_database_files(&remuneracao_file, &cadastro_file).unwrap();
-                println!(
-                    "\nTime elapsed: {:?}",
-                    Instant::now().duration_since(before)
-                );
+                    let before: Instant = Instant::now();
+                    parser::generate_database_files(&remuneracao_file, &cadastro_file).unwrap();
+                    println!(
+                        "\nTime elapsed: {:?}",
+                        Instant::now().duration_since(before)
+                    );
 
-                reparse_tries().unwrap();
-                clear_screen(true);
+                    reparse_tries().unwrap();
+                    clear_screen(true);
+                }
+                2 => {
+                    print!("\nName of the to-be-searched person: ");
+                    io::stdout().flush().unwrap();
+                    let query: String = if cfg!(windows) {
+                        read!("{}\r\n")
+                    } else {
+                        read!("{}\n")
+                    };
+
+                    let mut entries = search_person(query, prefix_search);
+                    entries.sort();
+                    entries.dedup();
+
+                    display_entries(entries);
+                    clear_screen(true);
+                }
+                3 => {
+                    print!("\nName of the to-be-searched role: ");
+                    io::stdout().flush().unwrap();
+                    let query: String = if cfg!(windows) {
+                        read!("{}\r\n")
+                    } else {
+                        read!("{}\n")
+                    };
+
+                    let mut entries = search_role(query, prefix_search);
+                    entries.sort();
+                    entries.dedup();
+
+                    display_entries(entries);
+                    clear_screen(true);
+                }
+                4 => {
+                    print!("\nName of the to-be-searched agency: ");
+                    io::stdout().flush().unwrap();
+                    let query: String = if cfg!(windows) {
+                        read!("{}\r\n")
+                    } else {
+                        read!("{}\n")
+                    };
+
+                    let mut entries = search_agency(query, prefix_search);
+                    entries.sort();
+                    entries.dedup();
+
+                    display_entries(entries);
+                    clear_screen(true);
+                }
+                5 => {
+                    create_new_entry(
+                        &mut name_memory_trie,
+                        &mut role_memory_trie,
+                        &mut agency_memory_trie,
+                    ).unwrap();
+                    clear_screen(true);
+                }
+                6 => {
+                    reparse_tries().unwrap();
+                    clear_screen(true);
+                }
+                7 => {
+                    println!("Bye bye! It was nice to have you here!! :(");
+                    break;
+                }
+                _ => {
+                    println!("\nINVALID CHOICE!!");
+                    clear_screen(true);
+                }
             }
-            2 => {
-                print!("\nName of the to-be-searched person: ");
-                io::stdout().flush().unwrap();
-                let query: String = if cfg!(windows) {
-                    read!("{}\r\n")
-                } else {
-                    read!("{}\n")
-                };
-                display_entries(search_person(query));
-                clear_screen(true);
-            }
-            3 => {
-                print!("\nName of the to-be-searched role: ");
-                io::stdout().flush().unwrap();
-                let query: String = if cfg!(windows) {
-                    read!("{}\r\n")
-                } else {
-                    read!("{}\n")
-                };
-                display_entries(search_role(query));
-                clear_screen(true);
-            }
-            4 => {
-                print!("\nName of the to-be-searched agency: ");
-                io::stdout().flush().unwrap();
-                let query: String = if cfg!(windows) {
-                    read!("{}\r\n")
-                } else {
-                    read!("{}\n")
-                };
-                display_entries(search_agency(query));
-                clear_screen(true);
-            }
-            5 => {
-                create_new_entry(
-                    &mut name_memory_trie,
-                    &mut role_memory_trie,
-                    &mut agency_memory_trie,
-                ).unwrap();
-                clear_screen(true);
-            }
-            6 => {
-                reparse_tries().unwrap();
-                clear_screen(true);
-            }
-            7 => {
-                println!("Bye bye! It was nice to have you here!! :(");
-                break;
-            }
-            _ => {
-                println!("\nINVALID CHOICE!!");
-                clear_screen(true);
-            }
+        } else {
+            println!("\nINVALID CHOICE!!");
+            clear_screen(true);
         }
     }
 
     Ok(())
 }
 
-pub fn search_on_database(matches: clap::ArgMatches) -> Result<(), Box<error::Error>> {
+pub fn search_on_database(matches: clap::ArgMatches, prefix_search : bool) -> Result<(), Box<error::Error>> {
     let mut entries: Vec<u32> = Vec::new();
 
     if let Some(person) = matches.value_of("person_name") {
-        entries.append(&mut search_person(person.to_string()));
+        entries.append(&mut search_person(person.to_string(), prefix_search));
     }
 
     if let Some(role) = matches.value_of("role_name") {
-        entries.append(&mut search_role(role.to_string()));
+        entries.append(&mut search_role(role.to_string(), prefix_search));
     }
 
     if let Some(agency) = matches.value_of("agency_name") {
-        entries.append(&mut search_agency(agency.to_string()));
+        entries.append(&mut search_agency(agency.to_string(), prefix_search));
     }
 
+    entries.sort();
+    entries.dedup();
     display_entries(entries);
 
     Ok(())
@@ -216,15 +238,15 @@ fn display_entries(entries: Vec<u32>) {
     }
 }
 
-fn search_person(person: String) -> Vec<u32> {
+fn search_person(person: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
-    if let Some(mut entry_positions) = trie::Trie::at_from_file(&person, "name_trie.bin").unwrap() {
+    if let Some(mut entry_positions) = trie::Trie::at_from_file(&person, "name_trie.bin", prefix_search).unwrap() {
         entries.append(&mut entry_positions);
     }
     if fs::metadata("name_memory_trie.bin").is_ok() {
         if let Some(mut entry_positions) =
-            trie::Trie::at_from_file(&person, "name_memory_trie.bin").unwrap()
+            trie::Trie::at_from_file(&person, "name_memory_trie.bin", prefix_search).unwrap()
         {
             entries.append(&mut entry_positions);
         }
@@ -233,15 +255,15 @@ fn search_person(person: String) -> Vec<u32> {
     return entries;
 }
 
-fn search_role(role: String) -> Vec<u32> {
+fn search_role(role: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
-    if let Some(mut entry_positions) = trie::Trie::at_from_file(&role, "role_trie.bin").unwrap() {
+    if let Some(mut entry_positions) = trie::Trie::at_from_file(&role, "role_trie.bin", prefix_search).unwrap() {
         entries.append(&mut entry_positions);
     }
     if fs::metadata("role_memory_trie.bin").is_ok() {
         if let Some(mut entry_positions) =
-            trie::Trie::at_from_file(&role, "role_memory_trie.bin").unwrap()
+            trie::Trie::at_from_file(&role, "role_memory_trie.bin", prefix_search).unwrap()
         {
             entries.append(&mut entry_positions);
         }
@@ -250,16 +272,16 @@ fn search_role(role: String) -> Vec<u32> {
     return entries;
 }
 
-fn search_agency(agency: String) -> Vec<u32> {
+fn search_agency(agency: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
-    if let Some(mut entry_positions) = trie::Trie::at_from_file(&agency, "agency_trie.bin").unwrap()
+    if let Some(mut entry_positions) = trie::Trie::at_from_file(&agency, "agency_trie.bin", prefix_search).unwrap()
     {
         entries.append(&mut entry_positions);
     }
     if fs::metadata("agency_memory_trie.bin").is_ok() {
         if let Some(mut entry_positions) =
-            trie::Trie::at_from_file(&agency, "agency_memory_trie.bin").unwrap()
+            trie::Trie::at_from_file(&agency, "agency_memory_trie.bin", prefix_search).unwrap()
         {
             entries.append(&mut entry_positions);
         }
@@ -284,6 +306,13 @@ pub fn create_new_entry(
     let mut new_record = record::Record::new_from_stdin();
     new_record.resize();
 
+    // Name-indexed trie insertion
+    let name = str::from_utf8(&new_record.nome)
+        .unwrap()
+        .trim_matches(char::from(0))
+        .to_string();
+    let name_split : Vec<&str> = name.split_whitespace().collect();
+
     name_trie.add(
         str::from_utf8(&new_record.nome)
             .unwrap()
@@ -291,20 +320,52 @@ pub fn create_new_entry(
             .to_string(),
         records_len as u32 + 1,
     );
-    role_trie.add(
+    for string in name_split {
+        if string.len() > 3 {
+            name_trie.add(string.to_string(), records_len as u32 + 1); // Add each of the words
+        }
+    }
+
+    // Role-indexed trie insertion
+    let role = str::from_utf8(&new_record.descricao_cargo)
+        .unwrap()
+        .trim_matches(char::from(0))
+        .to_string();
+    let role_split : Vec<&str> = role.split_whitespace().collect();
+
+    name_trie.add(
         str::from_utf8(&new_record.descricao_cargo)
             .unwrap()
             .trim_matches(char::from(0))
             .to_string(),
         records_len as u32 + 1,
     );
-    agency_trie.add(
+    for string in role_split {
+        if string.len() > 3 {
+            name_trie.add(string.to_string(), records_len as u32 + 1); // Add each of the words
+        }
+    }
+
+
+    // Agency-indexed trie insertion
+    let agency = str::from_utf8(&new_record.orgao_exercicio)
+        .unwrap()
+        .trim_matches(char::from(0))
+        .to_string();
+    let agency_split : Vec<&str> = agency.split_whitespace().collect();
+
+    name_trie.add(
         str::from_utf8(&new_record.orgao_exercicio)
             .unwrap()
             .trim_matches(char::from(0))
             .to_string(),
         records_len as u32 + 1,
     );
+    for string in agency_split {
+        if string.len() > 3 {
+            name_trie.add(string.to_string(), records_len as u32 + 1); // Add each of the words
+        }
+    }
 
     name_trie.save_to_file("name_memory_trie.bin").unwrap();
     role_trie.save_to_file("role_memory_trie.bin").unwrap();

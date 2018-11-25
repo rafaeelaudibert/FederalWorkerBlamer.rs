@@ -66,11 +66,11 @@ fn main() {
                 .help("Runs the program in the interactive mode"),
         ).arg(
             Arg::with_name("prefix_search")
-                .short("p")
+                .short("s")
                 .help("Runs the program using the prefix_search (CAREFUL)"),
         ).get_matches();
 
-    let prefix_search: bool = matches.occurrences_of("prefix_search") > 0; // Can safely unwrap, 'cause it has a default value
+    let prefix_search: bool = matches.occurrences_of("prefix_search") > 0;
 
     // Check if we should go to the interactive mode
     if matches.occurrences_of("interactive") > 0 {
@@ -135,7 +135,7 @@ fn main() {
     }
 
     // Search values in the database
-    if let Err(err) = cli::search_on_database(matches) {
+    if let Err(err) = cli::search_on_database(matches, prefix_search) {
         println!("Error creating a new entry in the database: {}", err);
         process::exit(1);
     }
