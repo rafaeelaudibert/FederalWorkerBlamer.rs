@@ -14,7 +14,8 @@ mod trie;   // Import trie.rs
 use clap::{App, Arg};
 use std::process;
 
-fn main() {
+fn main() {   
+
     let matches = App::new("Federal Worker Blamer")
         .version("1.0.0")
         .author("Rafael B. Audibert <rbaudibert@inf.ufrgs.br>")

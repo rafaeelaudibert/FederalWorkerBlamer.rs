@@ -91,7 +91,7 @@ pub fn interactive_mode(prefix_search: bool) -> Result<(), Box<error::Error>> {
                     let before: Instant = Instant::now();
                     parser::generate_database_files(&remuneracao_file, &cadastro_file).unwrap();
                     println!(
-                        "\nTime elapsed: {:?}",
+                        "\nTime elapsed in the CSV parsing: {:?}",
                         Instant::now().duration_since(before)
                     );
 
@@ -208,7 +208,7 @@ fn display_entries(entries: Vec<u32>) {
             csv_string += &record.generate_csv_string()
         }
         println!(
-            "\nTime elapsed: {:?}",
+            "Time elapsed to parse the records from the file: {:?}",
             Instant::now().duration_since(before)
         );
 
@@ -241,6 +241,7 @@ fn display_entries(entries: Vec<u32>) {
 fn search_person(person: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
+    let before = Instant::now();
     if let Some(mut entry_positions) = trie::Trie::at_from_file(&person, "name_trie.bin", prefix_search).unwrap() {
         entries.append(&mut entry_positions);
     }
@@ -251,6 +252,7 @@ fn search_person(person: String, prefix_search : bool) -> Vec<u32> {
             entries.append(&mut entry_positions);
         }
     }
+    println!("\nTime elapsed to search the name trie: {:?}", Instant::now().duration_since(before));
 
     return entries;
 }
@@ -258,6 +260,7 @@ fn search_person(person: String, prefix_search : bool) -> Vec<u32> {
 fn search_role(role: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
+    let before = Instant::now();
     if let Some(mut entry_positions) = trie::Trie::at_from_file(&role, "role_trie.bin", prefix_search).unwrap() {
         entries.append(&mut entry_positions);
     }
@@ -268,6 +271,7 @@ fn search_role(role: String, prefix_search : bool) -> Vec<u32> {
             entries.append(&mut entry_positions);
         }
     }
+    println!("\nTime elapsed to search the role trie: {:?}", Instant::now().duration_since(before));
 
     return entries;
 }
@@ -275,6 +279,7 @@ fn search_role(role: String, prefix_search : bool) -> Vec<u32> {
 fn search_agency(agency: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
+    let before = Instant::now();
     if let Some(mut entry_positions) = trie::Trie::at_from_file(&agency, "agency_trie.bin", prefix_search).unwrap()
     {
         entries.append(&mut entry_positions);
@@ -286,6 +291,7 @@ fn search_agency(agency: String, prefix_search : bool) -> Vec<u32> {
             entries.append(&mut entry_positions);
         }
     }
+    println!("\nTime elapsed to search the agency trie: {:?}", Instant::now().duration_since(before));
 
     return entries;
 }
@@ -312,17 +318,10 @@ pub fn create_new_entry(
         .trim_matches(char::from(0))
         .to_string();
     let name_split : Vec<&str> = name.split_whitespace().collect();
-
-    name_trie.add(
-        str::from_utf8(&new_record.nome)
-            .unwrap()
-            .trim_matches(char::from(0))
-            .to_string(),
-        records_len as u32 + 1,
-    );
-    for string in name_split {
-        if string.len() > 3 {
-            name_trie.add(string.to_string(), records_len as u32 + 1); // Add each of the words
+    for i in 0..name_split.len() + 1 {
+        for j in i+1..name_split.len() + 1 {
+            println!("{:?}", name_split[i..j].join(" "));
+            name_trie.add(name_split[i..j].join(" "), records_len as u32 + 1); // Add each of the words
         }
     }
 
@@ -332,17 +331,9 @@ pub fn create_new_entry(
         .trim_matches(char::from(0))
         .to_string();
     let role_split : Vec<&str> = role.split_whitespace().collect();
-
-    name_trie.add(
-        str::from_utf8(&new_record.descricao_cargo)
-            .unwrap()
-            .trim_matches(char::from(0))
-            .to_string(),
-        records_len as u32 + 1,
-    );
-    for string in role_split {
-        if string.len() > 3 {
-            name_trie.add(string.to_string(), records_len as u32 + 1); // Add each of the words
+    for i in 0..role_split.len() + 1 {
+        for j in i+1..role_split.len() + 1 {
+            role_trie.add(role_split[i..j].join(" "), records_len as u32 + 1); // Add each of the words
         }
     }
 
@@ -353,17 +344,9 @@ pub fn create_new_entry(
         .trim_matches(char::from(0))
         .to_string();
     let agency_split : Vec<&str> = agency.split_whitespace().collect();
-
-    name_trie.add(
-        str::from_utf8(&new_record.orgao_exercicio)
-            .unwrap()
-            .trim_matches(char::from(0))
-            .to_string(),
-        records_len as u32 + 1,
-    );
-    for string in agency_split {
-        if string.len() > 3 {
-            name_trie.add(string.to_string(), records_len as u32 + 1); // Add each of the words
+    for i in 0..agency_split.len() + 1 {
+        for j in i+1..agency_split.len() + 1 {
+            agency_trie.add(agency_split[i..j].join(" "), records_len as u32 + 1); // Add each of the words
         }
     }
 
@@ -385,7 +368,7 @@ pub fn parse_csv_files(mut csv_files: clap::Values) -> Result<(), Box<error::Err
     let before: Instant = Instant::now();
     parser::generate_database_files(csv_files.next().unwrap(), csv_files.next().unwrap()).unwrap();
     println!(
-        "\nTime elapsed: {:?}",
+        "\nTime elapsed in the CSV parsing: {:?}",
         Instant::now().duration_since(before)
     );
 
