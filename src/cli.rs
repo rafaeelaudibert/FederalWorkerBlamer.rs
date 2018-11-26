@@ -176,21 +176,86 @@ pub fn interactive_mode(prefix_search: bool) -> Result<(), Box<error::Error>> {
     Ok(())
 }
 
-pub fn search_on_database(matches: clap::ArgMatches, prefix_search : bool) -> Result<(), Box<error::Error>> {
-    let mut entries: Vec<u32> = Vec::new();
+pub fn search_on_database(matches: clap::ArgMatches, prefix_search : bool, or : bool) -> Result<(), Box<error::Error>> {
+    let mut person_entries : Vec<u32> = Vec::new();
+    let mut role_entries : Vec<u32> = Vec::new();
+    let mut agency_entries : Vec<u32> = Vec::new();
 
     if let Some(person) = matches.value_of("person_name") {
-        entries.append(&mut search_person(person.to_string(), prefix_search));
+        person_entries = search_person(person.to_string(), prefix_search);
     }
 
     if let Some(role) = matches.value_of("role_name") {
-        entries.append(&mut search_role(role.to_string(), prefix_search));
+        role_entries = search_role(role.to_string(), prefix_search);
     }
 
     if let Some(agency) = matches.value_of("agency_name") {
-        entries.append(&mut search_agency(agency.to_string(), prefix_search));
+        agency_entries = search_agency(agency.to_string(), prefix_search);
     }
 
+    let mut entries: Vec<u32> = Vec::new();
+    if !or { // === if and
+
+        if matches.occurrences_of("person_name") > 0 {
+            if matches.occurrences_of("role_name") > 0 {
+                if matches.occurrences_of("agency_name") > 0 {
+                    // Has person, role and agency
+                    let mut partial_entries : Vec<u32> = Vec::new();
+
+                    for entry in person_entries {
+                        if role_entries.contains(&entry) { partial_entries.push(entry) }
+                    }
+
+                    for entry in partial_entries {
+                        if agency_entries.contains(&entry) { entries.push(entry) }
+                    }
+
+                } else {
+                    // Has person and role
+                    //println!("PERSON_ENTRIES: {:?} - AGENCY_ENTRIES: ");
+                    for entry in person_entries {
+                        if role_entries.contains(&entry) { entries.push(entry) }
+                    }
+
+                }
+            } else {
+                if matches.occurrences_of("agency_name") > 0 {
+                    // Has person and agency
+                    for entry in person_entries {
+                        if agency_entries.contains(&entry) { entries.push(entry) }
+                    }
+
+                } else {
+                    // Has person
+                    entries = person_entries;
+
+                }
+            }
+        } else if matches.occurrences_of("role_name") > 0 {
+            if matches.occurrences_of("agency_name") > 0 {
+                // Has role and agency
+                for entry in role_entries {
+                    if agency_entries.contains(&entry) { entries.push(entry) }
+                }
+
+            } else {
+                // Has role
+                entries = role_entries;
+
+            }
+        } else {
+            // Has agency
+            entries = agency_entries;
+
+        }
+
+        display_entries(entries);
+        return Ok(())
+    }
+
+    entries.append(&mut person_entries);
+    entries.append(&mut role_entries);
+    entries.append(&mut agency_entries);
     entries.sort();
     entries.dedup();
     display_entries(entries);

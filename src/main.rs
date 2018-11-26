@@ -14,7 +14,7 @@ mod trie;   // Import trie.rs
 use clap::{App, Arg};
 use std::process;
 
-fn main() {   
+fn main() {
 
     let matches = App::new("Federal Worker Blamer")
         .version("1.0.0")
@@ -69,9 +69,14 @@ fn main() {
             Arg::with_name("prefix_search")
                 .short("s")
                 .help("Runs the program using the prefix_search (CAREFUL)"),
+        ).arg(
+            Arg::with_name("or_search")
+                .short("o")
+                .help("Runs the program CLI searches using OR instead of AND searches"),
         ).get_matches();
 
     let prefix_search: bool = matches.occurrences_of("prefix_search") > 0;
+    let or_search : bool = matches.occurrences_of("or_search") > 0;
 
     // Check if we should go to the interactive mode
     if matches.occurrences_of("interactive") > 0 {
@@ -136,7 +141,7 @@ fn main() {
     }
 
     // Search values in the database
-    if let Err(err) = cli::search_on_database(matches, prefix_search) {
+    if let Err(err) = cli::search_on_database(matches, prefix_search, or_search) {
         println!("Error creating a new entry in the database: {}", err);
         process::exit(1);
     }
