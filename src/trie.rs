@@ -113,11 +113,11 @@ impl Trie {
             let mut node: Node = Node::default();
 
             // 1st, we catch the values stored in it
-            let mut values_len = vec![0; 2];
+            let mut values_len = vec![0; 3];
             f.read_exact(&mut values_len)?;
 
             let mut values =
-                vec![0; (values_len[0] as u16 + ((values_len[1] as u16) << 8)) as usize * 4];
+                vec![0; (values_len[0] as u32 + ((values_len[1] as u32) << 8) + ((values_len[2] as u32) << 16)) as usize * 4];
             let mut node_values: Vec<u32> = Vec::new();
             f.read_exact(&mut values)?;
 
@@ -197,7 +197,7 @@ impl Trie {
 
             // parsed_node.push(self.nodes.nodes[node_index].val.len() as u8);
             // parsed_node.push((self.nodes.nodes[node_index].val.len() >> 8) as u8)
-            counter += 2; // 1 byte for the node value vector length (quantity of values)
+            counter += 3; // 3 bytes for the node value vector length (quantity of values)
 
             // for val in self.nodes.nodes[node_index].val.iter() {
             //     let bytes: [u8; 4] = unsafe { transmute(val.to_le()) };
@@ -223,6 +223,7 @@ impl Trie {
             // Append the length of the vector with the value of the node
             parsed_node.push(self.nodes.nodes[node_index].val.len() as u8);
             parsed_node.push((self.nodes.nodes[node_index].val.len() >> 8) as u8);
+            parsed_node.push((self.nodes.nodes[node_index].val.len() >> 16) as u8);
 
             // Append the vector with the value of the node
             for val in self.nodes.nodes[node_index].val.iter() {
@@ -261,11 +262,11 @@ impl Trie {
         if string.len() > 0 {
             for character in string.chars() {
                 // 1st, we jump the values stored in it
-                let mut values_len = vec![0; 2];
+                let mut values_len = vec![0; 3];
                 input_file.read_exact(&mut values_len)?;
                 input_file.read_exact(&mut vec![
                     0;
-                    (values_len[0] as u16 + ((values_len[1] as u16) << 8))
+                    (values_len[0] as u32 + ((values_len[1] as u32) << 8) + ((values_len[2] as u32) << 16))
                         as usize
                         * 4 as usize
                 ])?;
@@ -314,12 +315,12 @@ impl Trie {
                     input_file.seek(SeekFrom::Start(offset as u64)).unwrap();
 
                     // 1st, we retrieve the values and fill the parsed_values array
-                    let mut values_len = vec![0; 2];
+                    let mut values_len = vec![0; 3];
                     input_file.read_exact(&mut values_len)?;
 
                     let mut values = vec![
                         0;
-                        (values_len[0] as u16 + ((values_len[1] as u16) << 8))
+                        (values_len[0] as u32 + ((values_len[1] as u32) << 8) + ((values_len[2] as u32) << 16))
                             as usize
                             * 4 as usize
                     ];
@@ -360,12 +361,12 @@ impl Trie {
             } else {
                 // I only need to fetch myself
                 // Fetch the values and return it
-                let mut values_len = vec![0; 2];
+                let mut values_len = vec![0; 3];
                 input_file.read_exact(&mut values_len)?;
 
                 let mut values = vec![
                     0;
-                    (values_len[0] as u16 + ((values_len[1] as u16) << 8))
+                    (values_len[0] as u32 + ((values_len[1] as u32) << 8) + ((values_len[2] as u32) << 16))
                         as usize
                         * 4 as usize
                 ];
