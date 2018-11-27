@@ -5,6 +5,6 @@ authors = ["Rafael Audibert <rbaudibert@inf.ufrgs.br>"]
 
 [dependencies]
 csv = "1"
-clap = "~2.27.0"
+clap = "2.32.0"
 prettytable-rs = "^0.8"
 text_io = "0.1.7"

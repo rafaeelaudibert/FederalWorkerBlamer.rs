@@ -5,17 +5,16 @@ extern crate prettytable;
 extern crate clap;
 extern crate csv;
 
-mod cli; // Import cli.rs
+mod cli;    // Import cli.rs
 mod parser; // Import parser.rs
 mod record; // Import record.rs
-mod trie;   // Import trie.rs
+mod trie; // Import trie.rs
 
 // Import used libraries
 use clap::{App, Arg};
 use std::process;
 
 fn main() {
-
     let matches = App::new("Federal Worker Blamer")
         .version("1.0.0")
         .author("Rafael B. Audibert <rbaudibert@inf.ufrgs.br>")
@@ -76,7 +75,7 @@ fn main() {
         ).get_matches();
 
     let prefix_search: bool = matches.occurrences_of("prefix_search") > 0;
-    let or_search : bool = matches.occurrences_of("or_search") > 0;
+    let or_search: bool = matches.occurrences_of("or_search") > 0;
 
     // Check if we should go to the interactive mode
     if matches.occurrences_of("interactive") > 0 {
