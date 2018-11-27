@@ -307,16 +307,49 @@ fn search_person(person: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
     let before = Instant::now();
-    if let Some(mut entry_positions) = trie::Trie::at_from_file(&person, "name_trie.bin", prefix_search).unwrap() {
-        entries.append(&mut entry_positions);
-    }
-    if fs::metadata("name_memory_trie.bin").is_ok() {
-        if let Some(mut entry_positions) =
-            trie::Trie::at_from_file(&person, "name_memory_trie.bin", prefix_search).unwrap()
-        {
-            entries.append(&mut entry_positions);
+    let mut partial_entries : Vec<u32> = Vec::new();
+    let mut partial_entries_overflow : Vec<u32> = Vec::new();
+    let pieces : Vec<&str> = person.split_whitespace().collect();
+    for (i, piece) in pieces.iter().enumerate() {
+        if let Some(mut entry_positions) = trie::Trie::at_from_file(&piece, "name_trie.bin", prefix_search).unwrap() {
+            if i == 0 {
+                partial_entries = entry_positions;
+            } else {
+                let mut partial_entries2 : Vec<u32>= Vec::new();
+                for entry in partial_entries.clone() {
+                    if entry_positions.contains(&entry) {
+                        partial_entries2.push(entry);
+                    }
+                }
+
+                partial_entries = partial_entries2;
+            }
+        }
+
+        if fs::metadata("name_memory_trie.bin").is_ok() {
+            if let Some(mut entry_positions) =
+                trie::Trie::at_from_file(&piece, "name_memory_trie.bin", prefix_search).unwrap()
+            {
+                if i == 0 {
+                    partial_entries_overflow = entry_positions;
+                } else {
+                    let mut partial_entries2 : Vec<u32>= Vec::new();
+                    for entry in partial_entries_overflow.clone() {
+                        if entry_positions.contains(&entry) {
+                            partial_entries2.push(entry);
+                        }
+                    }
+
+                    partial_entries_overflow = partial_entries2;
+                }
+            }
         }
     }
+
+    entries.append(&mut partial_entries);
+    entries.append(&mut partial_entries_overflow);
+
+
     println!("\nTime elapsed to search the name trie: {:?}", Instant::now().duration_since(before));
 
     return entries;
@@ -326,16 +359,49 @@ fn search_role(role: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
     let before = Instant::now();
-    if let Some(mut entry_positions) = trie::Trie::at_from_file(&role, "role_trie.bin", prefix_search).unwrap() {
-        entries.append(&mut entry_positions);
-    }
-    if fs::metadata("role_memory_trie.bin").is_ok() {
-        if let Some(mut entry_positions) =
-            trie::Trie::at_from_file(&role, "role_memory_trie.bin", prefix_search).unwrap()
-        {
-            entries.append(&mut entry_positions);
+    let mut partial_entries : Vec<u32> = Vec::new();
+    let mut partial_entries_overflow : Vec<u32> = Vec::new();
+    let pieces : Vec<&str> = role.split_whitespace().collect();
+    for (i, piece) in pieces.iter().enumerate() {
+        if let Some(mut entry_positions) = trie::Trie::at_from_file(&piece, "role_trie.bin", prefix_search).unwrap() {
+            if i == 0 {
+                partial_entries = entry_positions;
+            } else {
+                let mut partial_entries2 : Vec<u32>= Vec::new();
+                for entry in partial_entries.clone() {
+                    if entry_positions.contains(&entry) {
+                        partial_entries2.push(entry);
+                    }
+                }
+
+                partial_entries = partial_entries2;
+            }
+        }
+
+        if fs::metadata("role_memory_trie.bin").is_ok() {
+            if let Some(mut entry_positions) =
+                trie::Trie::at_from_file(&piece, "role_memory_trie.bin", prefix_search).unwrap()
+            {
+                if i == 0 {
+                    partial_entries_overflow = entry_positions;
+                } else {
+                    let mut partial_entries2 : Vec<u32>= Vec::new();
+                    for entry in partial_entries_overflow.clone() {
+                        if entry_positions.contains(&entry) {
+                            partial_entries2.push(entry);
+                        }
+                    }
+
+                    partial_entries_overflow = partial_entries2;
+                }
+            }
         }
     }
+
+    entries.append(&mut partial_entries);
+    entries.append(&mut partial_entries_overflow);
+
+
     println!("\nTime elapsed to search the role trie: {:?}", Instant::now().duration_since(before));
 
     return entries;
@@ -345,18 +411,50 @@ fn search_agency(agency: String, prefix_search : bool) -> Vec<u32> {
     let mut entries: Vec<u32> = Vec::new();
 
     let before = Instant::now();
-    if let Some(mut entry_positions) = trie::Trie::at_from_file(&agency, "agency_trie.bin", prefix_search).unwrap()
-    {
-        entries.append(&mut entry_positions);
-    }
-    if fs::metadata("agency_memory_trie.bin").is_ok() {
-        if let Some(mut entry_positions) =
-            trie::Trie::at_from_file(&agency, "agency_memory_trie.bin", prefix_search).unwrap()
-        {
-            entries.append(&mut entry_positions);
+    let mut partial_entries : Vec<u32> = Vec::new();
+    let mut partial_entries_overflow : Vec<u32> = Vec::new();
+    let pieces : Vec<&str> = agency.split_whitespace().collect();
+    for (i, piece) in pieces.iter().enumerate() {
+        if let Some(mut entry_positions) = trie::Trie::at_from_file(&piece, "agency_trie.bin", prefix_search).unwrap() {
+            if i == 0 {
+                partial_entries = entry_positions;
+            } else {
+                let mut partial_entries2 : Vec<u32>= Vec::new();
+                for entry in partial_entries.clone() {
+                    if entry_positions.contains(&entry) {
+                        partial_entries2.push(entry);
+                    }
+                }
+
+                partial_entries = partial_entries2;
+            }
+        }
+
+        if fs::metadata("agency_memory_trie.bin").is_ok() {
+            if let Some(mut entry_positions) =
+                trie::Trie::at_from_file(&piece, "agency_memory_trie.bin", prefix_search).unwrap()
+            {
+                if i == 0 {
+                    partial_entries_overflow = entry_positions;
+                } else {
+                    let mut partial_entries2 : Vec<u32>= Vec::new();
+                    for entry in partial_entries_overflow.clone() {
+                        if entry_positions.contains(&entry) {
+                            partial_entries2.push(entry);
+                        }
+                    }
+
+                    partial_entries_overflow = partial_entries2;
+                }
+            }
         }
     }
-    println!("\nTime elapsed to search the agency trie: {:?}", Instant::now().duration_since(before));
+
+    entries.append(&mut partial_entries);
+    entries.append(&mut partial_entries_overflow);
+
+
+    println!("\nTime elapsed to search the role trie: {:?}", Instant::now().duration_since(before));
 
     return entries;
 }
@@ -383,11 +481,9 @@ pub fn create_new_entry(
         .trim_matches(char::from(0))
         .to_string();
     let name_split : Vec<&str> = name.split_whitespace().collect();
-    for i in 0..name_split.len() + 1 {
-        for j in i+1..name_split.len() + 1 {
-            println!("{:?}", name_split[i..j].join(" "));
-            name_trie.add(name_split[i..j].join(" "), records_len as u32 + 1); // Add each of the words
-        }
+
+    for piece in name_split {
+        name_trie.add(piece.to_string(), records_len as u32 + 1); // Add each of the words
     }
 
     // Role-indexed trie insertion
@@ -396,10 +492,9 @@ pub fn create_new_entry(
         .trim_matches(char::from(0))
         .to_string();
     let role_split : Vec<&str> = role.split_whitespace().collect();
-    for i in 0..role_split.len() + 1 {
-        for j in i+1..role_split.len() + 1 {
-            role_trie.add(role_split[i..j].join(" "), records_len as u32 + 1); // Add each of the words
-        }
+
+    for piece in role_split {
+        role_trie.add(piece.to_string(), records_len as u32 + 1); // Add each of the words
     }
 
 
@@ -409,10 +504,9 @@ pub fn create_new_entry(
         .trim_matches(char::from(0))
         .to_string();
     let agency_split : Vec<&str> = agency.split_whitespace().collect();
-    for i in 0..agency_split.len() + 1 {
-        for j in i+1..agency_split.len() + 1 {
-            agency_trie.add(agency_split[i..j].join(" "), records_len as u32 + 1); // Add each of the words
-        }
+
+    for piece in agency_split {
+        agency_trie.add(piece.to_string(), records_len as u32 + 1); // Add each of the words
     }
 
     name_trie.save_to_file("name_memory_trie.bin").unwrap();

@@ -84,10 +84,8 @@ impl Trie {
             let value = record.get(record_index);
             let split : Vec<&str> = value.split_whitespace().collect();
 
-            for i in 0..split.len() + 1 {
-                for j in i+1..split.len() + 1 {
-                    trie.add(split[i..j].join(" "), record_counter as u32 + 1); // Add each of the words
-                }
+            for piece in split {
+                trie.add(piece.to_string(), record_counter as u32 + 1); // Add each of the words
             }
 
             record_counter += 1;
