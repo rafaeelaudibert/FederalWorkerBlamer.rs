@@ -3,3 +3,4 @@ csv/*
 **/*.rs.bk
 *.bin
 *.png
+*.zip
