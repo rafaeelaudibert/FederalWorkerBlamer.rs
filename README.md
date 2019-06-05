@@ -2,9 +2,9 @@
 This repository contains the Final assignment for Data Search and Classification (INF01124) subject, done at [INF](https://inf.ufrgs.br)-[UFRGS](https://ufrgs.br).
 
 ## Setup
-To use this application you will need to download and install Rust language compiler and the Cargo tool [from here] (https://www.rust-lang.org/en/install.html). Note: Cargo already comes with the Rust compiler. You must also have Python 3.x installed, which already comes installed in Windows and most Linux distributions.
+To use this application you will need to download and install Rust language compiler and the Cargo tool [from here](https://www.rust-lang.org/en/install.html). Note: Cargo already comes with the Rust compiler. You must also have Python 3.x installed, which already comes installed in Windows and most Linux distributions.
 
-You will need to download brazilian federal government employees data from the [Federal Transparency] website (http://www.portaltransparencia.gov.br/download-de-dados/servidores). You can download any of the data present there, however I recommend downloading [July, 2018] (http://www.portaltransparencia.gov.br/download-de-dados/servidores/201807_Servidores) data, since the script in Python is preconfigured for it.
+You will need to download brazilian federal government employees data from the [Federal Transparency](http://www.portaltransparencia.gov.br/download-de-dados/servidores) website . You can download any of the data present there, however I recommend downloading [July, 2018](http://www.portaltransparencia.gov.br/download-de-dados/servidores/201807_Servidores) data, since the script in Python is preconfigured for it.
 
 These files must be placed inside the CSV folder.
 
